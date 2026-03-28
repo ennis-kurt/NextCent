@@ -1,10 +1,12 @@
+import type { ReactNode } from "react";
+
 import { cn } from "@/lib/utils";
 
 export function StatusPill({
   children,
   tone = "default"
 }: {
-  children: string;
+  children: ReactNode;
   tone?: "default" | "urgent" | "important" | "safe";
 }) {
   const styles = {

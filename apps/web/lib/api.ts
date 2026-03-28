@@ -1,6 +1,7 @@
 import type {
   CashFlowResponse,
   ChatAnswer,
+  ChatTranscript,
   ChatSession,
   CreditSummaryResponse,
   DashboardResponse,
@@ -9,6 +10,7 @@ import type {
   MonthlyReview,
   PersonaSummary,
   SafeToSpendSnapshot,
+  SimulationHistoryItem,
   SimulationRequest,
   SimulationResult,
   SubscriptionSummary
@@ -83,6 +85,10 @@ export async function createChatSession(personaId: string) {
   return fetchJson<ChatSession>(`/chat/sessions?persona_id=${personaId}`, { method: "POST" });
 }
 
+export async function getLatestChatSession(personaId: string) {
+  return fetchJson<ChatTranscript | null>(`/chat/sessions/latest?persona_id=${personaId}`);
+}
+
 export async function sendChatMessage(personaId: string, sessionId: string, message: string) {
   return fetchJson<ChatAnswer>("/chat/messages", {
     method: "POST",
@@ -99,6 +105,10 @@ export async function runSimulation(payload: SimulationRequest) {
     method: "POST",
     body: JSON.stringify(payload)
   });
+}
+
+export async function getSimulationHistory(personaId: string, limit = 4) {
+  return fetchJson<SimulationHistoryItem[]>(`/simulations?persona_id=${personaId}&limit=${limit}`);
 }
 
 export async function getCancellationLink(personaId: string, subscriptionId: string) {

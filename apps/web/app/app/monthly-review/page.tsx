@@ -2,6 +2,7 @@ import { MetricCard } from "@/components/metric-card";
 import { PageFrame } from "@/components/page-frame";
 import { SectionCard } from "@/components/section-card";
 import { getMonthlyReviews } from "@/lib/api";
+import { getPageFramePersonas } from "@/lib/page-data";
 import { formatCurrency } from "@/lib/format";
 
 export default async function MonthlyReviewPage({
@@ -11,10 +12,11 @@ export default async function MonthlyReviewPage({
 }) {
   const { persona } = await searchParams;
   const personaId = persona ?? "recovering-after-cutting-expenses";
-  const [review] = await getMonthlyReviews(personaId);
+  const [personas, reviews] = await Promise.all([getPageFramePersonas(), getMonthlyReviews(personaId)]);
+  const [review] = reviews;
 
   return (
-    <PageFrame pathname="/app/monthly-review" personaId={personaId}>
+    <PageFrame pathname="/app/monthly-review" personaId={personaId} personas={personas}>
       <section className="grid gap-4 xl:grid-cols-4">
         <MetricCard label="Income" value={formatCurrency(review.income)} tone="success" />
         <MetricCard label="Spending" value={formatCurrency(review.total_spending)} tone="warning" />

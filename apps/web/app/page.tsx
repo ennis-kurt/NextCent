@@ -7,14 +7,14 @@ import { SectionCard } from "@/components/section-card";
 
 export default function LandingPage() {
   return (
-    <main className="min-h-screen px-4 py-4 lg:px-6">
+    <main id="main-content" className="min-h-screen px-4 py-4 lg:px-6">
       <div className="mx-auto max-w-[1500px] space-y-6">
         <section className="rounded-[36px] border border-[var(--pa-border)] bg-[rgba(255,255,255,0.78)] px-6 py-6 shadow-hero backdrop-blur lg:px-10 lg:py-8">
           <div className="flex flex-col gap-10 lg:flex-row lg:items-end lg:justify-between">
             <div className="max-w-3xl">
               <Logo />
               <p className="mt-8 text-xs uppercase tracking-[0.28em] text-[var(--pa-text-soft)]">An AI personal accountant for everyday financial health</p>
-              <h1 className="mt-4 max-w-4xl font-display text-5xl font-semibold leading-tight text-[var(--pa-text)] lg:text-7xl">
+              <h1 className="mt-4 max-w-4xl text-balance font-display text-5xl font-semibold leading-tight text-[var(--pa-text)] lg:text-7xl">
                 Understand where your money is going. Protect your cash flow. Make the next move with confidence.
               </h1>
               <p className="mt-6 max-w-2xl text-lg leading-8 text-[var(--pa-text-muted)]">
@@ -23,14 +23,14 @@ export default function LandingPage() {
               <div className="mt-8 flex flex-wrap gap-3">
                 <Link
                   href="/onboarding"
-                  className="inline-flex items-center gap-2 rounded-full bg-[var(--pa-surface-ink)] px-6 py-3 text-sm font-semibold text-white"
+                  className="inline-flex items-center gap-2 rounded-full bg-[var(--pa-surface-ink)] px-6 py-3 text-sm font-semibold text-white transition-[background-color,transform] duration-150 hover:-translate-y-0.5 hover:bg-[#18212a] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--pa-primary)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--pa-bg)]"
                 >
                   Launch seeded demo
-                  <ArrowRight className="h-4 w-4" />
+                  <ArrowRight aria-hidden="true" className="h-4 w-4" />
                 </Link>
                 <Link
                   href="/app/dashboard?persona=high-debt-strong-income"
-                  className="inline-flex items-center gap-2 rounded-full border border-[var(--pa-border)] bg-white px-6 py-3 text-sm font-semibold text-[var(--pa-text)]"
+                  className="inline-flex items-center gap-2 rounded-full border border-[var(--pa-border)] bg-white px-6 py-3 text-sm font-semibold text-[var(--pa-text)] transition-[background-color,border-color,transform] duration-150 hover:-translate-y-0.5 hover:border-[rgba(15,23,32,0.2)] hover:bg-[var(--pa-surface)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--pa-primary)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--pa-bg)]"
                 >
                   View command center
                 </Link>

@@ -1,0 +1,132 @@
+[
+  {
+    "merchant_key": "netflix",
+    "display_name": "Netflix",
+    "help_url": "https://help.netflix.com/en",
+    "cancellation_url": "https://www.netflix.com/cancelplan",
+    "support_email": "",
+    "cancellation_steps": [
+      "Sign in to your account settings.",
+      "Open Membership & Billing.",
+      "Choose Cancel Membership and confirm."
+    ],
+    "confidence": 0.98
+  },
+  {
+    "merchant_key": "spotify",
+    "display_name": "Spotify",
+    "help_url": "https://support.spotify.com/us/",
+    "cancellation_url": "https://www.spotify.com/us/account/subscription/",
+    "support_email": "",
+    "cancellation_steps": [
+      "Open your account page.",
+      "Select Manage plan.",
+      "Choose Cancel Premium and confirm."
+    ],
+    "confidence": 0.98
+  },
+  {
+    "merchant_key": "adobe",
+    "display_name": "Adobe",
+    "help_url": "https://helpx.adobe.com/support.html",
+    "cancellation_url": "https://account.adobe.com/plans",
+    "support_email": "",
+    "cancellation_steps": [
+      "Sign in to Adobe account management.",
+      "Open Plans.",
+      "Choose Manage plan, then Cancel your plan."
+    ],
+    "confidence": 0.96
+  },
+  {
+    "merchant_key": "hulu",
+    "display_name": "Hulu",
+    "help_url": "https://help.hulu.com/",
+    "cancellation_url": "https://secure.hulu.com/account",
+    "support_email": "",
+    "cancellation_steps": [
+      "Open Account in Hulu.",
+      "Find Cancel your subscription.",
+      "Confirm the cancellation flow."
+    ],
+    "confidence": 0.95
+  },
+  {
+    "merchant_key": "icloudplus",
+    "display_name": "iCloud+",
+    "help_url": "https://support.apple.com/icloud",
+    "cancellation_url": "",
+    "support_email": "",
+    "cancellation_steps": [
+      "Open your Apple ID subscription settings.",
+      "Review the current iCloud+ plan.",
+      "Downgrade or cancel from the subscription controls."
+    ],
+    "confidence": 0.82
+  },
+  {
+    "merchant_key": "youtubepremium",
+    "display_name": "YouTube Premium",
+    "help_url": "https://support.google.com/youtube/topic/9257610",
+    "cancellation_url": "https://www.youtube.com/paid_memberships",
+    "support_email": "",
+    "cancellation_steps": [
+      "Open Paid memberships.",
+      "Select Manage membership.",
+      "Choose Deactivate and confirm."
+    ],
+    "confidence": 0.96
+  },
+  {
+    "merchant_key": "peloton",
+    "display_name": "Peloton",
+    "help_url": "https://support.onepeloton.com/",
+    "cancellation_url": "",
+    "support_email": "support@onepeloton.com",
+    "cancellation_steps": [
+      "Review your Membership settings.",
+      "If billed through a third party, cancel there instead.",
+      "Use support if self-service cancellation is unavailable."
+    ],
+    "confidence": 0.78
+  },
+  {
+    "merchant_key": "disneyplus",
+    "display_name": "Disney+",
+    "help_url": "https://help.disneyplus.com/",
+    "cancellation_url": "https://www.disneyplus.com/account/subscription",
+    "support_email": "",
+    "cancellation_steps": [
+      "Open your account.",
+      "Select Subscription.",
+      "Choose Cancel Subscription."
+    ],
+    "confidence": 0.95
+  },
+  {
+    "merchant_key": "dropbox",
+    "display_name": "Dropbox",
+    "help_url": "https://help.dropbox.com/",
+    "cancellation_url": "https://www.dropbox.com/account/plan",
+    "support_email": "",
+    "cancellation_steps": [
+      "Open your plan page.",
+      "Choose Manage plan.",
+      "Downgrade or cancel."
+    ],
+    "confidence": 0.93
+  },
+  {
+    "merchant_key": "appleone",
+    "display_name": "Apple One",
+    "help_url": "https://support.apple.com/en-us/118428",
+    "cancellation_url": "",
+    "support_email": "",
+    "cancellation_steps": [
+      "Open Subscriptions in Apple ID settings.",
+      "Select Apple One.",
+      "Review downgrade or cancellation options."
+    ],
+    "confidence": 0.82
+  }
+]

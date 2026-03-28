@@ -2,7 +2,8 @@ import { PageFrame } from "@/components/page-frame";
 import { SectionCard } from "@/components/section-card";
 import { StatusPill } from "@/components/status-pill";
 import { getCancellationDraft, getCancellationLink, getSubscriptions } from "@/lib/api";
-import { formatCurrency, formatDate } from "@/lib/format";
+import { getPageFramePersonas } from "@/lib/page-data";
+import { formatCurrency, formatDate, formatPercent } from "@/lib/format";
 
 export default async function SubscriptionsPage({
   searchParams
@@ -11,7 +12,7 @@ export default async function SubscriptionsPage({
 }) {
   const { persona } = await searchParams;
   const personaId = persona ?? "subscription-heavy";
-  const subscriptions = await getSubscriptions(personaId);
+  const [personas, subscriptions] = await Promise.all([getPageFramePersonas(), getSubscriptions(personaId)]);
 
   const actionData = await Promise.all(
     subscriptions.slice(0, 4).map(async (subscription) => {
@@ -28,7 +29,7 @@ export default async function SubscriptionsPage({
   );
 
   return (
-    <PageFrame pathname="/app/subscriptions" personaId={personaId}>
+    <PageFrame pathname="/app/subscriptions" personaId={personaId} personas={personas}>
       <SectionCard
         eyebrow="Recurring Charges"
         title="Review subscription spend before it compounds"
@@ -55,7 +56,7 @@ export default async function SubscriptionsPage({
                 </div>
                 <div className="rounded-2xl border border-[var(--pa-border)] bg-white px-4 py-3">
                   <p className="text-xs uppercase tracking-[0.16em] text-[var(--pa-text-soft)]">Detection confidence</p>
-                  <p className="mt-2 font-display text-2xl text-[var(--pa-text)]">{Math.round(subscription.confidence * 100)}%</p>
+                  <p className="mt-2 font-display text-2xl tabular-nums text-[var(--pa-text)]">{formatPercent(subscription.confidence)}</p>
                 </div>
               </div>
               <div className="mt-5 grid gap-4 md:grid-cols-2">
@@ -65,7 +66,12 @@ export default async function SubscriptionsPage({
                     This looks like a recurring subscription. Review whether you still use it before the next billing date.
                   </p>
                   {link?.help_url ? (
-                    <a className="mt-3 inline-block text-sm font-semibold text-[var(--pa-primary)]" href={link.help_url}>
+                    <a
+                      className="mt-3 inline-block text-sm font-semibold text-[var(--pa-primary)] transition-colors hover:text-[#165e55] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--pa-primary)] focus-visible:ring-offset-2 focus-visible:ring-offset-white"
+                      href={link.help_url}
+                      rel="noreferrer"
+                      target="_blank"
+                    >
                       Open merchant help page
                     </a>
                   ) : (

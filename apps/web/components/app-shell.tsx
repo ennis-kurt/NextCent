@@ -39,7 +39,7 @@ export function AppShell({
                   key={item.href}
                   href={`${item.href}?persona=${personaId}`}
                   className={cn(
-                    "flex items-center justify-between rounded-2xl px-4 py-3 text-sm transition",
+                    "flex items-center justify-between rounded-2xl px-4 py-3 text-sm transition-[background-color,color,box-shadow] duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--pa-primary)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--pa-surface)]",
                     active
                       ? "bg-[var(--pa-surface-ink)] text-white shadow-sm"
                       : "text-[var(--pa-text-muted)] hover:bg-white hover:text-[var(--pa-text)]"
@@ -57,11 +57,11 @@ export function AppShell({
             </p>
           </div>
         </aside>
-        <main className="space-y-6 pb-10">
+        <main id="main-content" className="space-y-6 pb-10">
           <header className="flex flex-col gap-4 rounded-[32px] border border-[var(--pa-border)] bg-[rgba(255,255,255,0.72)] px-6 py-5 shadow-panel backdrop-blur md:flex-row md:items-center md:justify-between">
             <div>
               <p className="text-xs uppercase tracking-[0.24em] text-[var(--pa-text-soft)]">Personal Finance Operating System</p>
-              <h1 className="mt-2 font-display text-3xl font-semibold text-[var(--pa-text)]">A calmer way to understand your money and act on it.</h1>
+              <h1 className="mt-2 text-balance font-display text-3xl font-semibold text-[var(--pa-text)]">A calmer way to understand your money and act on it.</h1>
             </div>
             <PersonaSwitcher personas={personas} personaId={personaId} />
           </header>

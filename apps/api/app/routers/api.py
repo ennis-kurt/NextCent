@@ -8,7 +8,7 @@ from sqlalchemy.orm import Session
 
 from ..config import settings
 from ..database import get_db
-from ..models import AgentRun, ChatSession, MerchantActionMetadata, Recommendation, RecurringCharge, User
+from ..models import AgentRun, ChatMessage, ChatSession, MerchantActionMetadata, RecurringCharge, SimulationResult, SimulationScenario, User
 from ..schemas import (
     ActivationResponse,
     AdminSeedScenarioResponse,
@@ -17,6 +17,8 @@ from ..schemas import (
     CancellationDraftResponse,
     CancellationLinkResponse,
     ChatAnswer,
+    ChatMessageSchema,
+    ChatTranscriptResponse,
     ChatMessageRequest,
     ChatSessionSchema,
     CreditSummaryResponse,
@@ -28,6 +30,7 @@ from ..schemas import (
     RecommendationSchema,
     RiskAlertSchema,
     SafeToSpendSnapshotSchema,
+    SimulationHistoryItem,
     SanitizationPolicyResponse,
     SimulationResultSchema,
     SimulationScenarioRequest,
@@ -222,6 +225,47 @@ def simulate(payload: SimulationScenarioRequest, db: Session = Depends(get_db)):
     return run_simulation(db, user.persona_key, payload.model_dump())
 
 
+@router.get("/simulations", response_model=list[SimulationHistoryItem])
+def get_simulation_history(
+    persona_id: str | None = Query(default=None),
+    limit: int = Query(default=5, ge=1, le=20),
+    db: Session = Depends(get_db),
+):
+    user = resolve_persona(persona_id, db)
+    scenarios = (
+        db.query(SimulationScenario)
+        .filter(SimulationScenario.user_id == user.id)
+        .order_by(SimulationScenario.created_at.desc())
+        .limit(limit)
+        .all()
+    )
+    if not scenarios:
+        return []
+
+    scenario_ids = [scenario.id for scenario in scenarios]
+    results = (
+        db.query(SimulationResult)
+        .filter(SimulationResult.scenario_id.in_(scenario_ids))
+        .order_by(SimulationResult.created_at.desc())
+        .all()
+    )
+    result_lookup: dict[str, SimulationResult] = {}
+    for result in results:
+        result_lookup.setdefault(result.scenario_id, result)
+
+    return [
+        SimulationHistoryItem(
+            scenario_id=scenario.id,
+            name=scenario.name,
+            scenario_type=scenario.scenario_type,
+            created_at=scenario.created_at,
+            result=SimulationResultSchema.model_validate(result_lookup[scenario.id].summary_json),
+        )
+        for scenario in scenarios
+        if scenario.id in result_lookup
+    ]
+
+
 @router.post("/subscriptions/{subscription_id}/draft-cancellation", response_model=CancellationDraftResponse)
 def draft_cancellation(subscription_id: str, persona_id: str = Query(...), db: Session = Depends(get_db)):
     user = resolve_persona(persona_id, db)
@@ -300,10 +344,38 @@ def create_session(persona_id: str = Query(...), db: Session = Depends(get_db)):
     return ChatSessionSchema.model_validate(session)
 
 
+@router.get("/chat/sessions/latest", response_model=ChatTranscriptResponse | None)
+def get_latest_chat_session(persona_id: str = Query(...), db: Session = Depends(get_db)):
+    user = resolve_persona(persona_id, db)
+    session = (
+        db.query(ChatSession)
+        .filter(ChatSession.user_id == user.id)
+        .order_by(ChatSession.created_at.desc())
+        .first()
+    )
+    if not session:
+        return None
+
+    messages = (
+        db.query(ChatMessage)
+        .filter(ChatMessage.session_id == session.id)
+        .order_by(ChatMessage.created_at.asc())
+        .all()
+    )
+    return ChatTranscriptResponse(
+        session=ChatSessionSchema.model_validate(session),
+        messages=[ChatMessageSchema.model_validate(message) for message in messages],
+    )
+
+
 @router.post("/chat/messages", response_model=ChatAnswer)
 def send_chat_message(payload: ChatMessageRequest, db: Session = Depends(get_db)):
-    resolve_persona(payload.persona_id, db)
-    session = db.query(ChatSession).filter(ChatSession.id == payload.session_id).first()
+    user = resolve_persona(payload.persona_id, db)
+    session = (
+        db.query(ChatSession)
+        .filter(ChatSession.id == payload.session_id, ChatSession.user_id == user.id)
+        .first()
+    )
     if not session:
         raise HTTPException(status_code=404, detail="Chat session not found.")
     return answer_chat(db, payload.persona_id, payload.session_id, payload.message)

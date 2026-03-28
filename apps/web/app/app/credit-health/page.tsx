@@ -2,6 +2,7 @@ import { MetricCard } from "@/components/metric-card";
 import { PageFrame } from "@/components/page-frame";
 import { SectionCard } from "@/components/section-card";
 import { getCreditSummary } from "@/lib/api";
+import { getPageFramePersonas } from "@/lib/page-data";
 import { formatCurrency, formatPercent } from "@/lib/format";
 
 export default async function CreditHealthPage({
@@ -11,10 +12,10 @@ export default async function CreditHealthPage({
 }) {
   const { persona } = await searchParams;
   const personaId = persona ?? "credit-score-pressure";
-  const credit = await getCreditSummary(personaId);
+  const [personas, credit] = await Promise.all([getPageFramePersonas(), getCreditSummary(personaId)]);
 
   return (
-    <PageFrame pathname="/app/credit-health" personaId={personaId}>
+    <PageFrame pathname="/app/credit-health" personaId={personaId} personas={personas}>
       <section className="grid gap-4 xl:grid-cols-4">
         <MetricCard label="Current score" value={credit.score_available ? `${credit.current_score}` : "Unavailable"} tone="primary" />
         <MetricCard label="Utilization pressure" value={formatPercent(credit.utilization_pressure)} tone={credit.utilization_pressure > 0.7 ? "warning" : "success"} />

@@ -27,7 +27,7 @@ export function SectionCard({
           <p className="text-xs font-medium uppercase tracking-[0.24em] text-[var(--pa-text-soft)]">{eyebrow}</p>
         ) : null}
         <div className="flex flex-col gap-1">
-          <h2 className="font-display text-xl font-semibold text-[var(--pa-text)]">{title}</h2>
+          <h2 className="text-balance font-display text-xl font-semibold text-[var(--pa-text)]">{title}</h2>
           {description ? <p className="max-w-2xl text-sm text-[var(--pa-text-muted)]">{description}</p> : null}
         </div>
       </div>

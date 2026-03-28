@@ -1,19 +1,19 @@
 import type { ReactNode } from "react";
-
-import { getPersonas } from "@/lib/api";
+import type { PersonaSummary } from "@contracts";
 
 import { AppShell } from "./app-shell";
 
-export async function PageFrame({
+export function PageFrame({
   pathname,
   personaId,
+  personas,
   children
 }: {
   pathname: string;
   personaId: string;
+  personas: PersonaSummary[];
   children: ReactNode;
 }) {
-  const personas = await getPersonas();
   const activePersona = personas.find((persona) => persona.id === personaId)?.id ?? personas[0]?.id ?? personaId;
 
   return (

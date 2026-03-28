@@ -1,0 +1,405 @@
+[
+  {
+    "id": "high-debt-strong-income",
+    "name": "Jordan Avery",
+    "archetype": "High debt, strong income",
+    "summary": "High income but carrying multiple revolving balances and paying avoidable interest.",
+    "monthly_income": 7800,
+    "checking_balance": 4600,
+    "savings_balance": 1800,
+    "rent": 1850,
+    "utilities": 240,
+    "insurance": 165,
+    "phone": 85,
+    "weekly_groceries": 155,
+    "weekly_dining": 165,
+    "weekly_transport": 85,
+    "weekly_entertainment": 90,
+    "weekly_other_discretionary": 110,
+    "savings_floor": 1200,
+    "paycheck_frequency_days": 14,
+    "paycheck_amount": 3900,
+    "credit_cards": [
+      {
+        "name": "Chase Sapphire",
+        "last4": "1932",
+        "limit": 14500,
+        "balance": 9800,
+        "apr": 24.99,
+        "minimum_payment": 290,
+        "due_day": 8
+      },
+      {
+        "name": "Amex Everyday",
+        "last4": "4408",
+        "limit": 8000,
+        "balance": 3300,
+        "apr": 19.9,
+        "minimum_payment": 110,
+        "due_day": 21
+      }
+    ],
+    "subscriptions": [
+      { "merchant": "Netflix", "amount": 19.99, "day": 4 },
+      { "merchant": "Spotify", "amount": 10.99, "day": 9 },
+      { "merchant": "Adobe", "amount": 22.99, "day": 16 }
+    ],
+    "flags": ["interest-leakage", "utilization-pressure"]
+  },
+  {
+    "id": "thin-checking-upcoming-bills",
+    "name": "Maya Brooks",
+    "archetype": "Thin checking balance with upcoming bills",
+    "summary": "Cash buffer is tight relative to bills before the next paycheck.",
+    "monthly_income": 4300,
+    "checking_balance": 620,
+    "savings_balance": 180,
+    "rent": 1460,
+    "utilities": 210,
+    "insurance": 145,
+    "phone": 70,
+    "weekly_groceries": 95,
+    "weekly_dining": 55,
+    "weekly_transport": 60,
+    "weekly_entertainment": 30,
+    "weekly_other_discretionary": 25,
+    "savings_floor": 300,
+    "paycheck_frequency_days": 14,
+    "paycheck_amount": 2150,
+    "credit_cards": [
+      {
+        "name": "Capital One Quicksilver",
+        "last4": "1120",
+        "limit": 3500,
+        "balance": 1640,
+        "apr": 26.4,
+        "minimum_payment": 65,
+        "due_day": 6
+      }
+    ],
+    "subscriptions": [
+      { "merchant": "Hulu", "amount": 8.99, "day": 3 },
+      { "merchant": "iCloud+", "amount": 2.99, "day": 14 }
+    ],
+    "flags": ["tight-buffer", "paycheck-to-paycheck"]
+  },
+  {
+    "id": "subscription-heavy",
+    "name": "Alex Chen",
+    "archetype": "Too many subscriptions",
+    "summary": "Recurring digital services are consuming more cash than the user realizes.",
+    "monthly_income": 5200,
+    "checking_balance": 2100,
+    "savings_balance": 950,
+    "rent": 1650,
+    "utilities": 220,
+    "insurance": 150,
+    "phone": 80,
+    "weekly_groceries": 120,
+    "weekly_dining": 120,
+    "weekly_transport": 75,
+    "weekly_entertainment": 120,
+    "weekly_other_discretionary": 95,
+    "savings_floor": 650,
+    "paycheck_frequency_days": 14,
+    "paycheck_amount": 2600,
+    "credit_cards": [
+      {
+        "name": "Bilt Mastercard",
+        "last4": "8831",
+        "limit": 6000,
+        "balance": 2100,
+        "apr": 21.5,
+        "minimum_payment": 85,
+        "due_day": 17
+      }
+    ],
+    "subscriptions": [
+      { "merchant": "Netflix", "amount": 22.99, "day": 4 },
+      { "merchant": "Spotify", "amount": 10.99, "day": 5 },
+      { "merchant": "YouTube Premium", "amount": 18.99, "day": 8 },
+      { "merchant": "Adobe", "amount": 22.99, "day": 11 },
+      { "merchant": "Peloton", "amount": 44.00, "day": 15 },
+      { "merchant": "Disney+", "amount": 15.99, "day": 18 },
+      { "merchant": "Dropbox", "amount": 11.99, "day": 24 }
+    ],
+    "flags": ["subscription-waste"]
+  },
+  {
+    "id": "rising-dining-spend",
+    "name": "Sofia Patel",
+    "archetype": "Dining spend climbing",
+    "summary": "Income is stable, but recent dining and delivery habits are pushing the month off course.",
+    "monthly_income": 6100,
+    "checking_balance": 2400,
+    "savings_balance": 1600,
+    "rent": 1780,
+    "utilities": 235,
+    "insurance": 130,
+    "phone": 75,
+    "weekly_groceries": 125,
+    "weekly_dining": 210,
+    "weekly_transport": 70,
+    "weekly_entertainment": 95,
+    "weekly_other_discretionary": 70,
+    "savings_floor": 1000,
+    "paycheck_frequency_days": 14,
+    "paycheck_amount": 3050,
+    "credit_cards": [
+      {
+        "name": "Citi Double Cash",
+        "last4": "7304",
+        "limit": 9000,
+        "balance": 2800,
+        "apr": 22.1,
+        "minimum_payment": 95,
+        "due_day": 12
+      }
+    ],
+    "subscriptions": [
+      { "merchant": "Netflix", "amount": 19.99, "day": 5 },
+      { "merchant": "ClassPass", "amount": 39.00, "day": 20 }
+    ],
+    "flags": ["spending-spike"]
+  },
+  {
+    "id": "frequent-overdraft-fees",
+    "name": "Chris Lawson",
+    "archetype": "Frequent overdraft fees",
+    "summary": "Repeated low-balance periods and fees are draining the account.",
+    "monthly_income": 3400,
+    "checking_balance": 280,
+    "savings_balance": 0,
+    "rent": 1325,
+    "utilities": 195,
+    "insurance": 120,
+    "phone": 65,
+    "weekly_groceries": 85,
+    "weekly_dining": 45,
+    "weekly_transport": 55,
+    "weekly_entertainment": 25,
+    "weekly_other_discretionary": 20,
+    "savings_floor": 150,
+    "paycheck_frequency_days": 14,
+    "paycheck_amount": 1700,
+    "credit_cards": [
+      {
+        "name": "Discover It",
+        "last4": "5511",
+        "limit": 2500,
+        "balance": 1180,
+        "apr": 27.4,
+        "minimum_payment": 45,
+        "due_day": 7
+      }
+    ],
+    "subscriptions": [
+      { "merchant": "Apple One", "amount": 19.95, "day": 13 }
+    ],
+    "flags": ["overdraft-fees", "tight-buffer", "paycheck-to-paycheck"]
+  },
+  {
+    "id": "good-cash-poor-payment-allocation",
+    "name": "Taylor Reed",
+    "archetype": "Good cash, weak debt allocation",
+    "summary": "Healthy liquidity, but extra debt payments are being spread inefficiently.",
+    "monthly_income": 6900,
+    "checking_balance": 5900,
+    "savings_balance": 4200,
+    "rent": 1920,
+    "utilities": 255,
+    "insurance": 175,
+    "phone": 82,
+    "weekly_groceries": 145,
+    "weekly_dining": 115,
+    "weekly_transport": 70,
+    "weekly_entertainment": 85,
+    "weekly_other_discretionary": 95,
+    "savings_floor": 2500,
+    "paycheck_frequency_days": 14,
+    "paycheck_amount": 3450,
+    "credit_cards": [
+      {
+        "name": "Chase Freedom",
+        "last4": "9013",
+        "limit": 12000,
+        "balance": 4100,
+        "apr": 25.8,
+        "minimum_payment": 120,
+        "due_day": 10
+      },
+      {
+        "name": "Wells Fargo Active Cash",
+        "last4": "2007",
+        "limit": 10000,
+        "balance": 4600,
+        "apr": 18.7,
+        "minimum_payment": 130,
+        "due_day": 24
+      }
+    ],
+    "subscriptions": [
+      { "merchant": "Netflix", "amount": 19.99, "day": 4 },
+      { "merchant": "Spotify", "amount": 10.99, "day": 8 }
+    ],
+    "flags": ["inefficient-payments"]
+  },
+  {
+    "id": "healthy-cashflow",
+    "name": "Nina Park",
+    "archetype": "Low utilization and healthy cash flow",
+    "summary": "A stable user with room to maintain good habits and build reserves.",
+    "monthly_income": 7600,
+    "checking_balance": 8200,
+    "savings_balance": 9200,
+    "rent": 2100,
+    "utilities": 260,
+    "insurance": 180,
+    "phone": 85,
+    "weekly_groceries": 135,
+    "weekly_dining": 95,
+    "weekly_transport": 60,
+    "weekly_entertainment": 65,
+    "weekly_other_discretionary": 70,
+    "savings_floor": 5000,
+    "paycheck_frequency_days": 14,
+    "paycheck_amount": 3800,
+    "credit_cards": [
+      {
+        "name": "Amex Blue Cash Preferred",
+        "last4": "4101",
+        "limit": 15000,
+        "balance": 1800,
+        "apr": 19.2,
+        "minimum_payment": 70,
+        "due_day": 18
+      }
+    ],
+    "subscriptions": [
+      { "merchant": "Netflix", "amount": 19.99, "day": 5 },
+      { "merchant": "NYTimes", "amount": 6.00, "day": 22 }
+    ],
+    "flags": ["healthy"]
+  },
+  {
+    "id": "paycheck-to-paycheck",
+    "name": "Marcus Bell",
+    "archetype": "Paycheck to paycheck",
+    "summary": "Little room for discretionary drift between paychecks.",
+    "monthly_income": 3900,
+    "checking_balance": 510,
+    "savings_balance": 120,
+    "rent": 1480,
+    "utilities": 210,
+    "insurance": 110,
+    "phone": 65,
+    "weekly_groceries": 90,
+    "weekly_dining": 50,
+    "weekly_transport": 65,
+    "weekly_entertainment": 35,
+    "weekly_other_discretionary": 22,
+    "savings_floor": 250,
+    "paycheck_frequency_days": 14,
+    "paycheck_amount": 1950,
+    "credit_cards": [
+      {
+        "name": "Capital One Platinum",
+        "last4": "7402",
+        "limit": 1800,
+        "balance": 1020,
+        "apr": 28.1,
+        "minimum_payment": 40,
+        "due_day": 9
+      }
+    ],
+    "subscriptions": [
+      { "merchant": "Xbox Game Pass", "amount": 16.99, "day": 6 },
+      { "merchant": "Apple Music", "amount": 10.99, "day": 16 }
+    ],
+    "flags": ["paycheck-to-paycheck", "tight-buffer"]
+  },
+  {
+    "id": "recovering-after-cutting-expenses",
+    "name": "Erin Morales",
+    "archetype": "Recovering after cutting expenses",
+    "summary": "Spending has improved recently and debt progress is starting to show.",
+    "monthly_income": 5400,
+    "checking_balance": 1850,
+    "savings_balance": 900,
+    "rent": 1580,
+    "utilities": 210,
+    "insurance": 140,
+    "phone": 72,
+    "weekly_groceries": 115,
+    "weekly_dining": 60,
+    "weekly_transport": 55,
+    "weekly_entertainment": 45,
+    "weekly_other_discretionary": 40,
+    "savings_floor": 700,
+    "paycheck_frequency_days": 14,
+    "paycheck_amount": 2700,
+    "credit_cards": [
+      {
+        "name": "Citi Simplicity",
+        "last4": "6820",
+        "limit": 5000,
+        "balance": 2100,
+        "apr": 20.9,
+        "minimum_payment": 78,
+        "due_day": 14
+      }
+    ],
+    "subscriptions": [
+      { "merchant": "Netflix", "amount": 15.49, "day": 4 },
+      { "merchant": "Headspace", "amount": 12.99, "day": 19 }
+    ],
+    "flags": ["recovery"]
+  },
+  {
+    "id": "credit-score-pressure",
+    "name": "Devon Kim",
+    "archetype": "Credit pressure from high utilization",
+    "summary": "Cash is decent, but revolving utilization is high enough to hurt credit health.",
+    "monthly_income": 6400,
+    "checking_balance": 3200,
+    "savings_balance": 1500,
+    "rent": 1750,
+    "utilities": 240,
+    "insurance": 150,
+    "phone": 75,
+    "weekly_groceries": 130,
+    "weekly_dining": 95,
+    "weekly_transport": 70,
+    "weekly_entertainment": 60,
+    "weekly_other_discretionary": 55,
+    "savings_floor": 1000,
+    "paycheck_frequency_days": 14,
+    "paycheck_amount": 3200,
+    "credit_score": 667,
+    "credit_cards": [
+      {
+        "name": "Chase Freedom Unlimited",
+        "last4": "1189",
+        "limit": 6500,
+        "balance": 5400,
+        "apr": 24.5,
+        "minimum_payment": 165,
+        "due_day": 13
+      },
+      {
+        "name": "Apple Card",
+        "last4": "1440",
+        "limit": 4000,
+        "balance": 2950,
+        "apr": 21.9,
+        "minimum_payment": 95,
+        "due_day": 26
+      }
+    ],
+    "subscriptions": [
+      { "merchant": "Netflix", "amount": 19.99, "day": 5 },
+      { "merchant": "iCloud+", "amount": 9.99, "day": 10 }
+    ],
+    "flags": ["utilization-pressure"]
+  }
+]

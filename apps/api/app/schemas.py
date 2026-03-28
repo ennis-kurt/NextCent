@@ -269,6 +269,20 @@ class ChatSessionSchema(ORMModel):
     created_at: datetime
 
 
+class ChatMessageSchema(ORMModel):
+    id: str
+    role: Literal["user", "assistant"]
+    content: str
+    cited_metrics: list[str]
+    assumptions: list[str]
+    created_at: datetime
+
+
+class ChatTranscriptResponse(BaseModel):
+    session: ChatSessionSchema
+    messages: list[ChatMessageSchema]
+
+
 class ChatMessageRequest(BaseModel):
     persona_id: str
     session_id: str
@@ -284,6 +298,20 @@ class ChatAnswer(BaseModel):
     assumptions: list[str]
     suggested_prompts: list[str]
     source_cards: list[dict[str, Any]]
+
+
+class SimulationHistoryItem(BaseModel):
+    scenario_id: str
+    name: str
+    scenario_type: Literal[
+        "new_monthly_expense",
+        "extra_debt_payment",
+        "cancel_subscriptions",
+        "reduce_category_spend",
+        "move_to_savings"
+    ]
+    created_at: datetime
+    result: SimulationResultSchema
 
 
 class PersonaSummary(BaseModel):

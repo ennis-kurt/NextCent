@@ -3,6 +3,7 @@ import { MetricCard } from "@/components/metric-card";
 import { PageFrame } from "@/components/page-frame";
 import { SectionCard } from "@/components/section-card";
 import { getCreditSummary, getDebtStrategies } from "@/lib/api";
+import { getPageFramePersonas } from "@/lib/page-data";
 import { formatCurrency, formatPercent } from "@/lib/format";
 
 export default async function DebtOptimizerPage({
@@ -12,10 +13,10 @@ export default async function DebtOptimizerPage({
 }) {
   const { persona } = await searchParams;
   const personaId = persona ?? "high-debt-strong-income";
-  const [debt, credit] = await Promise.all([getDebtStrategies(personaId), getCreditSummary(personaId)]);
+  const [personas, debt, credit] = await Promise.all([getPageFramePersonas(), getDebtStrategies(personaId), getCreditSummary(personaId)]);
 
   return (
-    <PageFrame pathname="/app/debt-optimizer" personaId={personaId}>
+    <PageFrame pathname="/app/debt-optimizer" personaId={personaId} personas={personas}>
       <section className="grid gap-4 xl:grid-cols-3">
         <MetricCard label="Recommended strategy" value={debt.recommended_strategy.replaceAll("_", " ")} tone="primary" detail={debt.rationale} />
         <MetricCard label="Utilization pressure" value={formatPercent(credit.utilization_pressure)} tone={credit.utilization_pressure > 0.7 ? "warning" : "success"} />

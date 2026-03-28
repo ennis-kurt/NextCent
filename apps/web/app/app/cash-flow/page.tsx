@@ -3,6 +3,7 @@ import { MetricCard } from "@/components/metric-card";
 import { PageFrame } from "@/components/page-frame";
 import { SectionCard } from "@/components/section-card";
 import { getCashFlow, getSafeToSpend } from "@/lib/api";
+import { getPageFramePersonas } from "@/lib/page-data";
 import { formatCurrency } from "@/lib/format";
 
 export default async function CashFlowPage({
@@ -12,10 +13,10 @@ export default async function CashFlowPage({
 }) {
   const { persona } = await searchParams;
   const personaId = persona ?? "high-debt-strong-income";
-  const [cashFlow, safe] = await Promise.all([getCashFlow(personaId), getSafeToSpend(personaId)]);
+  const [personas, cashFlow, safe] = await Promise.all([getPageFramePersonas(), getCashFlow(personaId), getSafeToSpend(personaId)]);
 
   return (
-    <PageFrame pathname="/app/cash-flow" personaId={personaId}>
+    <PageFrame pathname="/app/cash-flow" personaId={personaId} personas={personas}>
       <section className="grid gap-4 xl:grid-cols-4">
         <MetricCard label="Monthly income" value={formatCurrency(cashFlow.monthly_income)} tone="success" />
         <MetricCard label="Monthly spending" value={formatCurrency(cashFlow.monthly_spending)} tone="warning" />

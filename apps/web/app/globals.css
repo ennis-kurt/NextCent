@@ -36,10 +36,12 @@
 
 html {
   scroll-behavior: smooth;
+  overflow-x: hidden;
 }
 
 body {
   margin: 0;
+  overflow-x: hidden;
   background:
     radial-gradient(circle at top left, rgba(31, 116, 104, 0.08), transparent 32%),
     radial-gradient(circle at 90% 10%, rgba(183, 139, 66, 0.08), transparent 24%),
@@ -56,6 +58,36 @@ input,
 select,
 textarea {
   font: inherit;
+}
+
+button,
+a,
+select,
+textarea,
+input {
+  -webkit-tap-highlight-color: transparent;
+}
+
+:focus-visible {
+  outline: 2px solid var(--pa-primary);
+  outline-offset: 3px;
+}
+
+.skip-link {
+  position: absolute;
+  left: 1rem;
+  top: 1rem;
+  z-index: 50;
+  transform: translateY(-200%);
+  border-radius: 9999px;
+  background: var(--pa-surface-ink);
+  color: #fff;
+  padding: 0.75rem 1rem;
+  transition: transform 150ms ease;
+}
+
+.skip-link:focus-visible {
+  transform: translateY(0);
 }
 
 ::selection {

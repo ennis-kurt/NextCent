@@ -30,7 +30,7 @@ export function MetricCard({
       <div className="mb-4 flex items-start justify-between gap-3">
         <div>
           <p className="text-sm text-[var(--pa-text-muted)]">{label}</p>
-          <p className="mt-2 font-display text-3xl font-semibold text-[var(--pa-text)]">{value}</p>
+          <p className="mt-2 font-display text-3xl font-semibold tabular-nums text-[var(--pa-text)]">{value}</p>
         </div>
         {icon ? <div className="rounded-2xl bg-white/70 p-3 text-[var(--pa-text)]">{icon}</div> : null}
       </div>

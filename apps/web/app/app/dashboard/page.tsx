@@ -6,7 +6,8 @@ import { PageFrame } from "@/components/page-frame";
 import { SectionCard } from "@/components/section-card";
 import { SpendBreakdownChart } from "@/components/charts";
 import { getDashboard } from "@/lib/api";
-import { formatCurrency, formatDate } from "@/lib/format";
+import { getPageFramePersonas } from "@/lib/page-data";
+import { formatCurrency, formatDate, formatNumber } from "@/lib/format";
 
 export default async function DashboardPage({
   searchParams
@@ -15,10 +16,10 @@ export default async function DashboardPage({
 }) {
   const { persona } = await searchParams;
   const personaId = persona ?? "high-debt-strong-income";
-  const dashboard = await getDashboard(personaId);
+  const [personas, dashboard] = await Promise.all([getPageFramePersonas(), getDashboard(personaId)]);
 
   return (
-    <PageFrame pathname="/app/dashboard" personaId={personaId}>
+    <PageFrame pathname="/app/dashboard" personaId={personaId} personas={personas}>
       <section className="grid gap-4 xl:grid-cols-4">
         <MetricCard
           label="Total cash"
@@ -43,7 +44,7 @@ export default async function DashboardPage({
         />
         <MetricCard
           label="Financial health score"
-          value={`${dashboard.financial_health.overall_score.toFixed(0)}/100`}
+          value={`${formatNumber(dashboard.financial_health.overall_score)}/100`}
           tone="primary"
           detail="Internal product score. Not a regulated credit score."
           icon={<Shield className="h-5 w-5" />}

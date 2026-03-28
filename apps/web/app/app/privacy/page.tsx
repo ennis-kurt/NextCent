@@ -1,6 +1,7 @@
 import { PageFrame } from "@/components/page-frame";
 import { SectionCard } from "@/components/section-card";
 import { getSanitizationPolicy } from "@/lib/api";
+import { getPageFramePersonas } from "@/lib/page-data";
 
 export default async function PrivacyPage({
   searchParams
@@ -9,10 +10,10 @@ export default async function PrivacyPage({
 }) {
   const { persona } = await searchParams;
   const personaId = persona ?? "high-debt-strong-income";
-  const policy = await getSanitizationPolicy();
+  const [personas, policy] = await Promise.all([getPageFramePersonas(), getSanitizationPolicy()]);
 
   return (
-    <PageFrame pathname="/app/privacy" personaId={personaId}>
+    <PageFrame pathname="/app/privacy" personaId={personaId} personas={personas}>
       <SectionCard
         eyebrow="How Your Data Is Used"
         title="Privacy controls are visible in the product, not buried in a footer."

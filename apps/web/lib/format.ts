@@ -1,29 +1,59 @@
+const currencyFormatter = new Intl.NumberFormat("en-US", {
+  style: "currency",
+  currency: "USD",
+  maximumFractionDigits: 0
+});
+
+const preciseCurrencyFormatter = new Intl.NumberFormat("en-US", {
+  style: "currency",
+  currency: "USD",
+  maximumFractionDigits: 2
+});
+
+const percentFormatter = new Intl.NumberFormat("en-US", {
+  style: "percent",
+  maximumFractionDigits: 0
+});
+
+const wholeNumberFormatter = new Intl.NumberFormat("en-US", {
+  maximumFractionDigits: 0
+});
+
+const monthDayFormatter = new Intl.DateTimeFormat("en-US", {
+  month: "short",
+  day: "numeric"
+});
+
+const shortDateTimeFormatter = new Intl.DateTimeFormat("en-US", {
+  month: "short",
+  day: "numeric",
+  hour: "numeric",
+  minute: "2-digit"
+});
+
 export function formatCurrency(value: number) {
-  return new Intl.NumberFormat("en-US", {
-    style: "currency",
-    currency: "USD",
-    maximumFractionDigits: 0
-  }).format(value);
+  return currencyFormatter.format(value);
 }
 
 export function formatCurrencyPrecise(value: number) {
-  return new Intl.NumberFormat("en-US", {
-    style: "currency",
-    currency: "USD",
-    maximumFractionDigits: 2
-  }).format(value);
+  return preciseCurrencyFormatter.format(value);
 }
 
 export function formatPercent(value: number) {
-  return `${(value * 100).toFixed(0)}%`;
+  return percentFormatter.format(value);
+}
+
+export function formatNumber(value: number) {
+  return wholeNumberFormatter.format(value);
 }
 
 export function formatDate(value: string | null) {
   if (!value) return "Not projected";
-  return new Intl.DateTimeFormat("en-US", {
-    month: "short",
-    day: "numeric"
-  }).format(new Date(value));
+  return monthDayFormatter.format(new Date(value));
+}
+
+export function formatDateTime(value: string) {
+  return shortDateTimeFormatter.format(new Date(value));
 }
 
 export function titleCase(value: string) {

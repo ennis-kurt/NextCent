@@ -28,11 +28,11 @@ const steps = [
 
 export default function OnboardingPage() {
   return (
-    <main className="mx-auto min-h-screen max-w-6xl px-4 py-8 lg:px-6">
+    <main id="main-content" className="mx-auto min-h-screen max-w-6xl px-4 py-8 lg:px-6">
       <div className="rounded-[36px] border border-[var(--pa-border)] bg-[rgba(255,255,255,0.78)] p-8 shadow-hero backdrop-blur lg:p-10">
         <Logo />
         <p className="mt-8 text-xs uppercase tracking-[0.28em] text-[var(--pa-text-soft)]">Onboarding</p>
-        <h1 className="mt-4 font-display text-5xl font-semibold text-[var(--pa-text)]">Clarity first. Permissions second.</h1>
+        <h1 className="mt-4 text-balance font-display text-5xl font-semibold text-[var(--pa-text)]">Clarity first. Permissions second.</h1>
         <p className="mt-4 max-w-2xl text-lg leading-8 text-[var(--pa-text-muted)]">
           Before asking for data, the product explains what it does, what the AI can see, what stays masked, and how guidance is generated.
         </p>
@@ -46,13 +46,13 @@ export default function OnboardingPage() {
         <div className="mt-8 flex flex-wrap gap-3">
           <Link
             href="/app/dashboard?persona=high-debt-strong-income"
-            className="rounded-full bg-[var(--pa-surface-ink)] px-6 py-3 text-sm font-semibold text-white"
+            className="rounded-full bg-[var(--pa-surface-ink)] px-6 py-3 text-sm font-semibold text-white transition-[background-color,transform] duration-150 hover:-translate-y-0.5 hover:bg-[#18212a] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--pa-primary)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--pa-bg)]"
           >
             Enter the seeded app
           </Link>
           <Link
             href="/app/privacy?persona=high-debt-strong-income"
-            className="rounded-full border border-[var(--pa-border)] bg-white px-6 py-3 text-sm font-semibold text-[var(--pa-text)]"
+            className="rounded-full border border-[var(--pa-border)] bg-white px-6 py-3 text-sm font-semibold text-[var(--pa-text)] transition-[background-color,border-color,transform] duration-150 hover:-translate-y-0.5 hover:border-[rgba(15,23,32,0.2)] hover:bg-[var(--pa-surface)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--pa-primary)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--pa-bg)]"
           >
             Read privacy controls
           </Link>

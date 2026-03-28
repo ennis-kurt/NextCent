@@ -203,6 +203,20 @@ export interface ChatSession {
   created_at: string;
 }
 
+export interface ChatMessage {
+  id: string;
+  role: "user" | "assistant";
+  content: string;
+  cited_metrics: string[];
+  assumptions: string[];
+  created_at: string;
+}
+
+export interface ChatTranscript {
+  session: ChatSession;
+  messages: ChatMessage[];
+}
+
 export interface ChatAnswer {
   session_id: string;
   answer: string;
@@ -241,4 +255,17 @@ export interface SimulationResult {
   current_state: Record<string, string | number | null>;
   simulated_state: Record<string, string | number | null>;
   deltas: Record<string, string | number | null>;
+}
+
+export interface SimulationHistoryItem {
+  scenario_id: string;
+  name: string;
+  scenario_type:
+    | "new_monthly_expense"
+    | "extra_debt_payment"
+    | "cancel_subscriptions"
+    | "reduce_category_spend"
+    | "move_to_savings";
+  created_at: string;
+  result: SimulationResult;
 }
