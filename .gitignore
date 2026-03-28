@@ -15,5 +15,6 @@ apps/api/personal_accountant.db-shm
 apps/api/personal_accountant.db-wal
 apps/web/.next/
 apps/web/node_modules/
+*.tsbuildinfo
 dist/
 coverage/

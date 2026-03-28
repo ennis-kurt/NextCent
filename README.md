@@ -1,5 +1,7 @@
 # Personal Accountant AI
 
+[![CI](https://github.com/ennis-kurt/NextCent/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/ennis-kurt/NextCent/actions/workflows/ci.yml)
+
 Personal Accountant AI is a production-style seeded MVP for a privacy-first personal finance web app. It combines deterministic financial analysis with an agentic explanation layer to help users understand cash flow, debt stress, subscription waste, Safe to Spend, and the next best action.
 
 ## What is implemented
@@ -58,6 +60,26 @@ pnpm dev
 ```
 
 Set `NEXT_PUBLIC_API_BASE_URL=http://127.0.0.1:8000/api/v1` for the default local split-stack setup.
+
+## Continuous integration
+
+GitHub Actions runs two checks on pushes and pull requests to `main`:
+
+- API: installs `apps/api` with the dev extras on Python 3.14 and runs `pytest`
+- Web: installs the pnpm workspace, type-checks the Next.js app, and runs a production build
+
+The same checks can be run locally with:
+
+```bash
+cd apps/api
+source .venv/bin/activate
+python -m pytest
+
+cd /Users/cihatkurt/Documents/personal_accountant
+pnpm install --frozen-lockfile
+pnpm --dir apps/web exec tsc --noEmit
+pnpm --dir apps/web build
+```
 
 ## Notes about this workspace
 
