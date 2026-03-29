@@ -80,14 +80,14 @@ export function AppShell({
   return (
     <div className="min-h-screen bg-[radial-gradient(circle_at_top_left,rgba(31,116,104,0.08),transparent_28%),radial-gradient(circle_at_top_right,rgba(183,139,66,0.08),transparent_22%),transparent]">
       <div className="mx-auto grid min-h-screen max-w-[1560px] gap-6 px-4 py-4 lg:grid-cols-[300px_minmax(0,1fr)] lg:px-6">
-        <aside className="flex flex-col overflow-hidden rounded-[34px] border border-white/8 bg-[linear-gradient(180deg,rgba(21,34,45,0.97),rgba(15,23,32,0.99))] p-6 text-white shadow-[0_32px_80px_rgba(9,16,24,0.34)] lg:sticky lg:top-4 lg:h-[calc(100vh-2rem)]">
+        <aside className="flex flex-col overflow-hidden rounded-[34px] border border-white/8 bg-[linear-gradient(180deg,rgba(21,34,45,0.97),rgba(15,23,32,0.99))] p-6 text-white shadow-[0_32px_80px_rgba(9,16,24,0.34)] lg:self-start">
           <Logo tone="inverted" showTagline={false} />
           <div className="mt-6 inline-flex w-fit rounded-full border border-white/10 bg-white/6 px-3 py-1.5 text-[11px] uppercase tracking-[0.2em] text-white/62">
             Seeded demo data
           </div>
-          <div className="mt-8 flex min-h-0 flex-1 flex-col">
+          <div className="mt-8 flex flex-col">
             <p className="text-[11px] uppercase tracking-[0.22em] text-white/45">Workspace</p>
-            <nav className="mt-3 flex-1 space-y-2 overflow-y-auto pr-1">
+            <nav className="mt-3 space-y-2">
               {APP_NAV.map((item) => {
                 const active = pathname.startsWith(item.href);
                 return (
