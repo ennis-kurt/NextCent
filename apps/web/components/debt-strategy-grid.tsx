@@ -31,7 +31,7 @@ export function DebtStrategyGrid({
       title="Debt strategy comparison"
       description="Compare payoff speed, interest cost, and liquidity impact before choosing a repayment posture."
     >
-      <div className="grid gap-4 md:grid-cols-2 2xl:grid-cols-4">
+      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
         {debt.strategies.map((strategy) => {
           const isSelected = strategy.strategy === selectedStrategy.strategy;
           const isRecommended = strategy.strategy === debt.recommended_strategy;
@@ -43,6 +43,7 @@ export function DebtStrategyGrid({
               aria-pressed={isSelected}
               className={cn(
                 "group rounded-[24px] border p-5 text-left transition-[transform,box-shadow,border-color,background-color] duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--pa-primary)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--pa-bg)]",
+                "xl:p-4",
                 isSelected
                   ? "border-[var(--pa-primary)] bg-[var(--pa-primary-soft)] shadow-[0_24px_40px_rgba(31,116,104,0.12)]"
                   : "border-[var(--pa-border)] bg-[var(--pa-surface)] hover:-translate-y-0.5 hover:border-[rgba(15,23,32,0.16)] hover:shadow-[0_18px_30px_rgba(8,15,22,0.08)]",
@@ -55,16 +56,16 @@ export function DebtStrategyGrid({
             >
               <div className="flex items-start justify-between gap-3">
                 <div>
-                  <p className="text-xs uppercase tracking-[0.2em] text-[var(--pa-text-soft)]">{strategy.prioritizes}</p>
-                  <h3 className="mt-2 font-display text-xl text-[var(--pa-text)]">{strategy.title}</h3>
+                  <p className="text-xs uppercase tracking-[0.18em] text-[var(--pa-text-soft)] xl:text-[11px]">{strategy.prioritizes}</p>
+                  <h3 className="mt-2 font-display text-xl text-[var(--pa-text)] xl:text-[1.8rem] xl:leading-none">{strategy.title}</h3>
                 </div>
                 <div className="flex flex-wrap justify-end gap-2">
                   {isSelected ? <StatusPill>Selected</StatusPill> : null}
                   {isRecommended ? <StatusPill tone="safe">Recommended</StatusPill> : null}
                 </div>
               </div>
-              <p className="mt-3 text-sm text-[var(--pa-text-muted)]">{strategy.why_choose_it}</p>
-              <dl className="mt-5 space-y-3 text-sm text-[var(--pa-text-muted)]">
+              <p className="mt-3 text-sm text-[var(--pa-text-muted)] xl:text-[13px] xl:leading-6">{strategy.why_choose_it}</p>
+              <dl className="mt-5 space-y-3 text-sm text-[var(--pa-text-muted)] xl:space-y-2.5 xl:text-[13px]">
                 <div className="flex justify-between gap-3">
                   <dt>Payment pool</dt>
                   <dd className="font-semibold text-[var(--pa-text)]">{formatCurrency(strategy.monthly_payment_pool)}</dd>
@@ -82,13 +83,13 @@ export function DebtStrategyGrid({
                   <dd className="font-semibold text-[var(--pa-text)]">{formatCurrency(strategy.projected_interest_cost)}</dd>
                 </div>
               </dl>
-              <div className="mt-5 rounded-2xl border border-[var(--pa-border)] bg-white/70 p-4 text-sm text-[var(--pa-text-muted)]">
+              <div className="mt-5 rounded-2xl border border-[var(--pa-border)] bg-white/70 p-4 text-sm text-[var(--pa-text-muted)] xl:p-3.5 xl:text-[13px] xl:leading-6">
                 <p className="font-semibold text-[var(--pa-text)]">Tradeoff</p>
                 <p className="mt-2">{strategy.tradeoffs}</p>
                 <p className="mt-3 font-semibold text-[var(--pa-text)]">Liquidity impact</p>
                 <p className="mt-2">{strategy.liquidity_impact}</p>
               </div>
-              <div className="mt-5 flex items-center justify-between gap-3 border-t border-[rgba(15,23,32,0.08)] pt-4 text-sm">
+              <div className="mt-5 flex items-center justify-between gap-3 border-t border-[rgba(15,23,32,0.08)] pt-4 text-sm xl:mt-4 xl:pt-3 xl:text-[13px]">
                 <span className="text-[var(--pa-text-muted)]">{isSelected ? "Action plan shown below" : "Click to view plan"}</span>
                 <span className="font-medium text-[var(--pa-text)]">{isSelected ? "Viewing" : "Preview"}</span>
               </div>

@@ -8,6 +8,7 @@ import { SectionCard } from "@/components/section-card";
 import { ExpandableNote } from "@/components/expandable-note";
 import { SpendBreakdownChart } from "@/components/charts";
 import { getCreditSummary, getDashboard, getDebtStrategies } from "@/lib/api";
+import { resolveInvestmentGuidance } from "@/lib/investment";
 import { getPageFramePersonas } from "@/lib/page-data";
 import { formatCurrency, formatDate, formatNumber } from "@/lib/format";
 
@@ -27,7 +28,10 @@ export default async function DashboardPage({
   const recommendedDebtStrategy = debt.strategies.find((strategy) => strategy.strategy === debt.recommended_strategy);
   const debtTarget = recommendedDebtStrategy?.suggested_allocations[0];
   const debtTargetCard = credit.cards.find((card) => card.id === String(debtTarget?.account_id));
-  const investment = dashboard.investment_guidance;
+  const { guidance: investment, isFallback: investmentFallback } = resolveInvestmentGuidance({
+    dashboard,
+    debt
+  });
 
   return (
     <PageFrame pathname="/app/dashboard" personaId={personaId} personas={personas}>
@@ -256,6 +260,11 @@ export default async function DashboardPage({
               />
             </div>
             <p className="mt-5 text-sm leading-7 text-[var(--pa-text-muted)]">{investment.summary}</p>
+            {investmentFallback ? (
+              <p className="mt-4 rounded-[18px] border border-[rgba(31,116,104,0.16)] bg-white/72 px-4 py-3 text-xs leading-6 text-[var(--pa-text-muted)]">
+                The dedicated investment service was unavailable for this request, so this guidance is being estimated from the dashboard signals already loaded for this persona.
+              </p>
+            ) : null}
           </div>
         </div>
       </SectionCard>

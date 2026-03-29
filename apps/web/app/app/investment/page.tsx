@@ -6,6 +6,7 @@ import { PageFrame } from "@/components/page-frame";
 import { SectionCard } from "@/components/section-card";
 import { getCreditSummary, getDashboard, getDebtStrategies, getInvestmentGuidance } from "@/lib/api";
 import { formatCurrency, formatNumber } from "@/lib/format";
+import { resolveInvestmentGuidance } from "@/lib/investment";
 import { getPageFramePersonas } from "@/lib/page-data";
 
 export default async function InvestmentPage({
@@ -15,10 +16,10 @@ export default async function InvestmentPage({
 }) {
   const { persona } = await searchParams;
   const personaId = persona ?? "healthy-cashflow";
-  const [personas, dashboard, investment, debt, credit] = await Promise.all([
+  const [personas, dashboard, directInvestment, debt, credit] = await Promise.all([
     getPageFramePersonas(),
     getDashboard(personaId),
-    getInvestmentGuidance(personaId),
+    getInvestmentGuidance(personaId).catch(() => null),
     getDebtStrategies(personaId),
     getCreditSummary(personaId)
   ]);
@@ -26,6 +27,11 @@ export default async function InvestmentPage({
   const recommendedDebtStrategy = debt.strategies.find((strategy) => strategy.strategy === debt.recommended_strategy);
   const debtTarget = recommendedDebtStrategy?.suggested_allocations[0];
   const debtTargetCard = credit.cards.find((card) => card.id === String(debtTarget?.account_id));
+  const { guidance: investment, isFallback: investmentFallback } = resolveInvestmentGuidance({
+    dashboard,
+    debt,
+    directGuidance: directInvestment
+  });
   const investNow = investment.posture === "invest_now";
 
   return (
@@ -36,6 +42,11 @@ export default async function InvestmentPage({
         description={investment.summary}
         descriptionDetail={investment.rationale}
       >
+        {investmentFallback ? (
+          <div className="mb-5 rounded-[22px] border border-[rgba(31,116,104,0.16)] bg-[var(--pa-primary-soft)]/35 px-4 py-4 text-sm leading-7 text-[var(--pa-text-muted)]">
+            The detailed investment endpoint was unavailable for this request, so this page is using a compatibility estimate derived from the dashboard and debt signals already loaded for this persona.
+          </div>
+        ) : null}
         <div className="grid gap-4 xl:grid-cols-4">
           <MetricCard
             label="Invest now"

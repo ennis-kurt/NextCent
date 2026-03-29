@@ -17,6 +17,8 @@ import type {
   SubscriptionSummary
 } from "@contracts";
 
+import type { DashboardResponseCompat } from "@/lib/investment";
+
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://127.0.0.1:8000/api/v1";
 
 async function fetchJson<T>(path: string, init?: RequestInit): Promise<T> {
@@ -41,7 +43,7 @@ export async function getPersonas() {
 }
 
 export async function getDashboard(personaId: string) {
-  return fetchJson<DashboardResponse>(`/dashboard?persona_id=${personaId}`);
+  return fetchJson<DashboardResponseCompat>(`/dashboard?persona_id=${personaId}`);
 }
 
 export async function getCashFlow(personaId: string) {
