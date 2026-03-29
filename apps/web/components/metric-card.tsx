@@ -18,23 +18,49 @@ export function MetricCard({
   icon?: ReactNode;
 }) {
   const tones = {
-    default: "bg-[var(--pa-surface)]",
-    primary: "bg-[var(--pa-primary-soft)]",
-    warning: "bg-[var(--pa-warning-soft)]",
-    danger: "bg-[var(--pa-danger-soft)]",
-    success: "bg-[var(--pa-success-soft)]"
+    default: {
+      surface: "bg-[linear-gradient(180deg,rgba(255,255,255,0.82),rgba(247,239,226,0.95))]",
+      accent: "bg-[rgba(18,32,43,0.72)]",
+      icon: "bg-white/80"
+    },
+    primary: {
+      surface: "bg-[linear-gradient(180deg,rgba(216,235,228,0.88),rgba(255,255,255,0.96))]",
+      accent: "bg-[var(--pa-primary)]",
+      icon: "bg-white/72"
+    },
+    warning: {
+      surface: "bg-[linear-gradient(180deg,rgba(248,234,215,0.95),rgba(255,255,255,0.96))]",
+      accent: "bg-[var(--pa-warning)]",
+      icon: "bg-white/72"
+    },
+    danger: {
+      surface: "bg-[linear-gradient(180deg,rgba(247,223,223,0.95),rgba(255,255,255,0.96))]",
+      accent: "bg-[var(--pa-danger)]",
+      icon: "bg-white/72"
+    },
+    success: {
+      surface: "bg-[linear-gradient(180deg,rgba(223,244,234,0.95),rgba(255,255,255,0.96))]",
+      accent: "bg-[var(--pa-success)]",
+      icon: "bg-white/72"
+    }
   };
 
   return (
-    <div className={cn("rounded-[24px] border border-[var(--pa-border)] p-5", tones[tone])}>
+    <div
+      className={cn(
+        "relative overflow-hidden rounded-[28px] border border-[var(--pa-border)] p-5 shadow-[var(--pa-shadow-sm)]",
+        tones[tone].surface
+      )}
+    >
+      <div className={cn("absolute inset-x-0 top-0 h-1.5", tones[tone].accent)} />
       <div className="mb-4 flex items-start justify-between gap-3">
         <div>
           <p className="text-sm text-[var(--pa-text-muted)]">{label}</p>
           <p className="mt-2 font-display text-3xl font-semibold tabular-nums text-[var(--pa-text)]">{value}</p>
         </div>
-        {icon ? <div className="rounded-2xl bg-white/70 p-3 text-[var(--pa-text)]">{icon}</div> : null}
+        {icon ? <div className={cn("rounded-2xl p-3 text-[var(--pa-text)] shadow-[var(--pa-shadow-sm)]", tones[tone].icon)}>{icon}</div> : null}
       </div>
-      {detail ? <p className="text-sm text-[var(--pa-text-muted)]">{detail}</p> : null}
+      {detail ? <p className="max-w-[26rem] text-sm leading-6 text-[var(--pa-text-muted)]">{detail}</p> : null}
       {change ? <p className="mt-2 font-medium text-[var(--pa-text)]">{change}</p> : null}
     </div>
   );

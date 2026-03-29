@@ -55,8 +55,9 @@ export function SimulationPanel({
   return (
     <SectionCard
       eyebrow="Decision Lab"
-      title="What-if simulation"
-      description="Compare current state and a proposed change before you commit to it. Each run is saved and can be revisited from the latest persona history."
+      title="Simulation"
+      description="Test a change, compare deltas, and reopen saved runs."
+      descriptionDetail="Each run compares the current state against a proposed move and saves the latest output back into persona history."
     >
       <div className="grid gap-6 lg:grid-cols-[360px_minmax(0,1fr)]">
         <form
@@ -175,9 +176,7 @@ export function SimulationPanel({
             ) : (
               <div className="flex h-full min-h-80 flex-col justify-center rounded-[24px] bg-[var(--pa-surface)] p-8 text-center">
                 <p className="font-display text-2xl text-[var(--pa-text)]">Model the next move before you make it.</p>
-                <p className="mt-3 text-sm text-[var(--pa-text-muted)]">
-                  The simulation engine estimates surplus impact, Safe to Spend changes, and liquidity tradeoffs using recent account behavior.
-                </p>
+                <p className="mt-3 text-sm text-[var(--pa-text-muted)]">See surplus, Safe to Spend, and liquidity impact before acting.</p>
               </div>
             )}
           </div>
@@ -185,7 +184,7 @@ export function SimulationPanel({
             <div className="flex items-center justify-between gap-3">
               <div>
                 <p className="text-xs uppercase tracking-[0.22em] text-[var(--pa-text-soft)]">Saved runs</p>
-                <h3 className="mt-2 font-display text-xl text-[var(--pa-text)]">Recent simulation history</h3>
+                <h3 className="mt-2 font-display text-xl text-[var(--pa-text)]">Recent runs</h3>
               </div>
               <StatusPill>{history.length} saved</StatusPill>
             </div>

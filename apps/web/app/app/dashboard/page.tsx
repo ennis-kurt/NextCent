@@ -54,8 +54,9 @@ export default async function DashboardPage({
       <section className="grid gap-6 xl:grid-cols-[1.2fr_0.8fr]">
         <SectionCard
           eyebrow="Safe To Spend"
-          title="Living guidance, not a rigid budget number"
-          description="This number changes with balances, pending debits, upcoming bills, debt minimums, and your recent discretionary pace."
+          title="Current runway"
+          description="Updates with bills, debt minimums, and recent pace."
+          descriptionDetail="This is not a fixed budget cap. The number moves with upcoming obligations, pending debits, and how fast discretionary spending is tracking."
         >
           <div className="grid gap-4 md:grid-cols-3">
             <MetricCard label="Today" value={formatCurrency(dashboard.safe_to_spend.safe_to_spend_today)} tone="primary" />
@@ -73,8 +74,9 @@ export default async function DashboardPage({
         </SectionCard>
         <SectionCard
           eyebrow="What Is Affecting Your Score"
-          title="Health score drivers"
-          description="Transparent component scores help separate debt pressure from buffer strength and spending behavior."
+          title="Score drivers"
+          description="Separate debt pressure, buffer strength, and spending behavior."
+          descriptionDetail="The goal is to show what is moving the score instead of hiding everything inside one number."
         >
           <div className="space-y-4">
             {dashboard.financial_health.drivers.map((driver) => (
@@ -90,14 +92,16 @@ export default async function DashboardPage({
         <SectionCard
           eyebrow="Spending Trend"
           title="Where the month is going"
-          description="Recommendations are shown separately from raw category totals so the dashboard stays calm."
+          description="Category totals for the current cycle."
+          descriptionDetail="Recommendations stay separate from raw category totals so you can first see what happened before the product suggests what to do."
         >
           <SpendBreakdownChart data={dashboard.spend_by_category} />
         </SectionCard>
         <SectionCard
           eyebrow="Leakage"
           title="Fee and subscription drag"
-          description="Waste and interest should be visible because they are often the fastest sources of cash-flow relief."
+          description="Fast sources of cash-flow relief."
+          descriptionDetail="Recurring charges, fees, and revolving interest are often the quickest ways to recover near-term flexibility."
         >
           <div className="grid gap-4 md:grid-cols-2">
             <MetricCard

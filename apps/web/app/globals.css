@@ -3,27 +3,32 @@
 @tailwind utilities;
 
 :root {
-  --pa-bg: #f5f4ee;
-  --pa-surface: #fbfaf6;
-  --pa-surface-strong: #ffffff;
-  --pa-surface-ink: #0f1720;
+  --pa-bg: #eee5d6;
+  --pa-bg-deep: #e2d6c2;
+  --pa-surface: #f7efe2;
+  --pa-surface-muted: #ece1ce;
+  --pa-surface-strong: #fffdf8;
+  --pa-surface-ink: #12202b;
+  --pa-panel: #15222d;
   --pa-border: rgba(14, 25, 34, 0.12);
-  --pa-text: #0f1720;
+  --pa-border-strong: rgba(14, 25, 34, 0.18);
+  --pa-text: #12202b;
   --pa-text-muted: #5b6470;
-  --pa-text-soft: #7c8794;
+  --pa-text-soft: #7b857f;
   --pa-primary: #1f7468;
-  --pa-primary-soft: #d9ece8;
+  --pa-primary-soft: #d8ebe4;
   --pa-accent: #b78b42;
-  --pa-accent-soft: #f4ead7;
+  --pa-accent-soft: #f4e5c9;
   --pa-success: #1f8a5c;
   --pa-success-soft: #dff4ea;
   --pa-warning: #b46b18;
   --pa-warning-soft: #f8ead7;
   --pa-danger: #b34747;
   --pa-danger-soft: #f7dfdf;
-  --pa-shadow-lg: 0 22px 54px rgba(8, 15, 22, 0.08);
-  --pa-shadow-md: 0 12px 28px rgba(8, 15, 22, 0.05);
-  --pa-shadow-sm: 0 6px 16px rgba(8, 15, 22, 0.04);
+  --pa-shadow-xl: 0 40px 90px rgba(10, 16, 24, 0.12);
+  --pa-shadow-lg: 0 24px 56px rgba(8, 15, 22, 0.08);
+  --pa-shadow-md: 0 16px 34px rgba(8, 15, 22, 0.06);
+  --pa-shadow-sm: 0 10px 20px rgba(8, 15, 22, 0.05);
   --pa-radius-xl: 28px;
   --pa-radius-lg: 20px;
   --pa-radius-md: 14px;
@@ -37,15 +42,33 @@
 html {
   scroll-behavior: smooth;
   overflow-x: hidden;
+  background: var(--pa-bg);
 }
 
 body {
+  position: relative;
   margin: 0;
+  min-height: 100vh;
   overflow-x: hidden;
   background:
-    radial-gradient(circle at top left, rgba(31, 116, 104, 0.08), transparent 32%),
-    radial-gradient(circle at 90% 10%, rgba(183, 139, 66, 0.08), transparent 24%),
-    var(--pa-bg);
+    radial-gradient(circle at 12% 8%, rgba(31, 116, 104, 0.16), transparent 24%),
+    radial-gradient(circle at 88% 10%, rgba(183, 139, 66, 0.16), transparent 20%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.45), rgba(255, 255, 255, 0) 28%),
+    linear-gradient(180deg, var(--pa-bg), var(--pa-bg-deep));
+  color: var(--pa-text);
+  font-feature-settings: "ss01" on, "cv10" on;
+}
+
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  background:
+    linear-gradient(rgba(18, 32, 43, 0.025) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(18, 32, 43, 0.025) 1px, transparent 1px);
+  background-size: 140px 140px;
+  mask-image: linear-gradient(180deg, rgba(255, 255, 255, 0.45), transparent 78%);
 }
 
 a {
@@ -92,4 +115,42 @@ input {
 
 ::selection {
   background: rgba(31, 116, 104, 0.18);
+}
+
+.pa-fade-up {
+  animation: pa-fade-up 720ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.pa-delay-1 {
+  animation-delay: 120ms;
+}
+
+.pa-delay-2 {
+  animation-delay: 220ms;
+}
+
+@keyframes pa-fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
 }

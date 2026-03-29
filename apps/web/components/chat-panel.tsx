@@ -65,8 +65,9 @@ export function ChatPanel({
   return (
     <SectionCard
       eyebrow="Grounded Assistant"
-      title="AI Accountant Chat"
-      description="The assistant answers from structured account data and resumes the latest saved conversation for the current persona."
+      title="AI Accountant"
+      description="Grounded answers from the current persona and latest saved thread."
+      descriptionDetail="The assistant answers from structured account data and picks up the latest saved conversation for the selected persona."
     >
       <div className="grid gap-6 lg:grid-cols-[1.15fr_0.85fr]">
         <div className="rounded-[24px] border border-[var(--pa-border)] bg-[var(--pa-surface)] p-5">
@@ -75,11 +76,11 @@ export function ChatPanel({
               <Bot aria-hidden="true" className="h-5 w-5" />
             </div>
             <div>
-              <p className="font-display text-lg text-[var(--pa-text)]">Conversation</p>
+              <p className="font-display text-lg text-[var(--pa-text)]">Latest conversation</p>
               <p className="text-sm text-[var(--pa-text-muted)]">
                 {transcript
-                  ? `Continuing the latest saved session from ${formatDateTime(transcript.session.created_at)}.`
-                  : "Start a conversation to save grounded guidance for this persona."}
+                  ? `Resuming the saved thread from ${formatDateTime(transcript.session.created_at)}.`
+                  : "Start a thread for grounded guidance."}
               </p>
             </div>
           </div>
@@ -105,9 +106,7 @@ export function ChatPanel({
               ))}
             </div>
           ) : (
-            <p className="text-sm text-[var(--pa-text-muted)]">
-              Ask about Safe to Spend, debt strategy, subscriptions, score drivers, or near-term cash risk.
-            </p>
+            <p className="text-sm text-[var(--pa-text-muted)]">Ask about cash, debt, score, or subscriptions.</p>
           )}
           {answer ? (
             <div className="mt-5 space-y-5 border-t border-[var(--pa-border)] pt-5">
@@ -155,7 +154,7 @@ export function ChatPanel({
               onChange={(event) => setMessage(event.target.value)}
             />
             <p id={helperId} className="mt-2 text-sm text-[var(--pa-text-muted)]">
-              Questions are answered from seeded structured data, with facts and estimates separated in the response.
+              Responses separate facts from estimates.
             </p>
             <button
               className="mt-4 inline-flex items-center gap-2 rounded-full bg-[var(--pa-surface-ink)] px-5 py-3 text-sm font-semibold text-white transition-[background-color,transform] duration-150 hover:-translate-y-0.5 hover:bg-[#18212a] disabled:cursor-not-allowed disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--pa-primary)] focus-visible:ring-offset-2 focus-visible:ring-offset-white"
@@ -171,7 +170,7 @@ export function ChatPanel({
             {error ? <p className="mt-3 text-sm text-[var(--pa-danger)]">{error}</p> : null}
           </form>
           <div className="rounded-[24px] border border-[var(--pa-border)] bg-[var(--pa-surface)] p-5">
-            <p className="text-xs uppercase tracking-[0.22em] text-[var(--pa-text-soft)]">Suggested prompts</p>
+            <p className="text-xs uppercase tracking-[0.22em] text-[var(--pa-text-soft)]">Quick prompts</p>
             <div className="mt-3 space-y-2">
               {suggestedPrompts.map((prompt) => (
                 <button
