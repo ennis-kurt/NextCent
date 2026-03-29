@@ -25,6 +25,11 @@ const SHELL_COPY: Record<string, { summary: string; detail: string }> = {
     detail:
       "The optimizer focuses on balances that are most expensive or most risky to carry so the first dollars you move do the most work."
   },
+  "/app/investment": {
+    summary: "See whether surplus should go to debt, cash, or investing.",
+    detail:
+      "This view treats investing as an allocation decision, checking debt APR, buffer strength, and current surplus before recommending a channel and amount."
+  },
   "/app/credit-health": {
     summary: "See what is helping or dragging the score.",
     detail:

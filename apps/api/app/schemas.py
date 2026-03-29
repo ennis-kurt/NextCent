@@ -195,6 +195,24 @@ class MonthlyReviewSchema(BaseModel):
     next_month_actions: list[str]
 
 
+class InvestmentGuidanceSchema(BaseModel):
+    posture: Literal["invest_now", "debt_first", "buffer_first"]
+    title: str
+    summary: str
+    rationale: str
+    recommended_investment_amount: float
+    priority_action_amount: float
+    priority_destination: str
+    investment_channel: str
+    cadence: Literal["monthly", "this_cycle"]
+    monthly_surplus: float
+    fee_and_interest_leakage: float
+    max_apr: float | None = None
+    liquid_buffer_months: float
+    why_now: str
+    assumptions: list[str]
+
+
 class DashboardResponse(BaseModel):
     persona_id: str
     persona_name: str
@@ -202,6 +220,7 @@ class DashboardResponse(BaseModel):
     balance_summary: BalanceSummary
     financial_health: FinancialHealthScoreSchema
     safe_to_spend: SafeToSpendSnapshotSchema
+    investment_guidance: InvestmentGuidanceSchema
     top_recommendations: list[RecommendationSchema]
     risks: list[RiskAlertSchema]
     spend_by_category: list[CategorySpend]

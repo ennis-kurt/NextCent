@@ -22,7 +22,7 @@ export default async function DebtOptimizerPage({
         <MetricCard label="Utilization pressure" value={formatPercent(credit.utilization_pressure)} tone={credit.utilization_pressure > 0.7 ? "warning" : "success"} />
         <MetricCard label="Credit trend" value={credit.trend_label} detail={credit.payment_behavior} />
       </section>
-      <DebtStrategyGrid debt={debt} />
+      <DebtStrategyGrid key={personaId} cards={credit.cards} debt={debt} />
       <SectionCard eyebrow="Accounts" title="Connected revolving accounts">
         <div className="grid gap-4 xl:grid-cols-2">
           {credit.cards.map((card) => (

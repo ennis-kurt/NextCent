@@ -41,6 +41,7 @@ from ..schemas import (
     DebtStrategyRunSchema,
     FinancialHealthScoreSchema,
     HealthBreakdown,
+    InvestmentGuidanceSchema,
     MonthlyReviewSchema,
     RecommendationSchema,
     RiskAlertSchema,
@@ -639,6 +640,128 @@ def compute_debt_strategies(context: UserContext, safe: SafeToSpendSnapshotSchem
     )
 
 
+def recommended_debt_target(debt: DebtStrategyRunSchema) -> dict[str, Any] | None:
+    highest_strategy = next((item for item in debt.strategies if item.strategy == debt.recommended_strategy), None)
+    if not highest_strategy or not highest_strategy.suggested_allocations:
+        return None
+    return highest_strategy.suggested_allocations[0]
+
+
+def compute_investment_guidance(
+    context: UserContext,
+    safe: SafeToSpendSnapshotSchema,
+    debt: DebtStrategyRunSchema,
+) -> InvestmentGuidanceSchema:
+    balance = latest_balance_summary(context)
+    monthly = monthly_totals(context)
+    monthly_surplus = round(max(0.0, monthly["monthly_income"] - monthly["monthly_spending"]), 2)
+    fixed_expenses = max(monthly["monthly_fixed"], 1.0)
+    liquid_buffer_months = round(balance.liquid_cash / fixed_expenses, 2)
+    max_apr = max((card.apr for card in context.cards), default=None)
+    top_debt_target = recommended_debt_target(debt)
+
+    if (
+        safe.spending_velocity_status != "safe"
+        or safe.safe_to_spend_until_payday < safe.risk_buffer * 0.75
+        or monthly_surplus < 100
+    ):
+        buffer_amount = round(max(0.0, min(monthly_surplus * 0.35, max(125.0, safe.risk_buffer * 0.4))), 2)
+        return InvestmentGuidanceSchema(
+            posture="buffer_first",
+            title="Hold new investing until the cash buffer is steadier",
+            summary="Near-term cash pressure is still high enough that starting an investment contribution would reduce flexibility.",
+            rationale="The current runway to payday is narrow relative to the risk buffer, so new dollars should stay liquid before they go into market exposure.",
+            recommended_investment_amount=0.0,
+            priority_action_amount=buffer_amount,
+            priority_destination="Cash reserve",
+            investment_channel="Not ready for market investing yet",
+            cadence="monthly",
+            monthly_surplus=monthly_surplus,
+            fee_and_interest_leakage=monthly["leakage"],
+            max_apr=round(max_apr, 1) if max_apr is not None else None,
+            liquid_buffer_months=liquid_buffer_months,
+            why_now="Investment contributions should wait until the next-payday cushion is less fragile.",
+            assumptions=[
+                "Current bill cadence and income timing remain stable.",
+                "Liquid cash is the first source of protection for near-term surprises.",
+            ],
+        )
+
+    if (max_apr is not None and max_apr >= 24) or monthly["leakage"] >= 45:
+        debt_amount = round(
+            max(
+                0.0,
+                top_debt_target["suggested_payment"] if top_debt_target else min(monthly_surplus * 0.55, max(monthly["leakage"] * 4, 150.0)),
+            ),
+            2,
+        )
+        return InvestmentGuidanceSchema(
+            posture="debt_first",
+            title="Debt payoff outranks investing right now",
+            summary="The current interest drag is high enough that paying down debt is the stronger guaranteed return.",
+            rationale="When a card APR is materially above realistic low-risk investing outcomes, reducing that balance is the cleaner use of surplus cash.",
+            recommended_investment_amount=0.0,
+            priority_action_amount=debt_amount,
+            priority_destination="Debt paydown",
+            investment_channel="Redirect surplus to the highest-impact card first",
+            cadence="this_cycle",
+            monthly_surplus=monthly_surplus,
+            fee_and_interest_leakage=monthly["leakage"],
+            max_apr=round(max_apr, 1) if max_apr is not None else None,
+            liquid_buffer_months=liquid_buffer_months,
+            why_now="The current APR and interest leakage are a stronger guaranteed drag than a new investment contribution can reliably overcome.",
+            assumptions=[
+                "Seeded APRs are representative of the active revolving balances.",
+                "Minimum payments are already covered before extra dollars are allocated.",
+            ],
+        )
+
+    if liquid_buffer_months < 1.5:
+        reserve_amount = round(max(0.0, min(monthly_surplus * 0.4, monthly["monthly_fixed"] * 0.25)), 2)
+        return InvestmentGuidanceSchema(
+            posture="buffer_first",
+            title="Build a deeper liquid reserve before investing",
+            summary="You have some surplus, but the liquid buffer is still thin for starting a durable investment habit.",
+            rationale="A modest reserve makes future investing more stable because it reduces the odds of needing to sell or pause contributions during the next squeeze.",
+            recommended_investment_amount=0.0,
+            priority_action_amount=reserve_amount,
+            priority_destination="Cash reserve",
+            investment_channel="High-yield cash reserve first",
+            cadence="monthly",
+            monthly_surplus=monthly_surplus,
+            fee_and_interest_leakage=monthly["leakage"],
+            max_apr=round(max_apr, 1) if max_apr is not None else None,
+            liquid_buffer_months=liquid_buffer_months,
+            why_now="The current surplus is real, but the reserve cushion is still more valuable than immediate market exposure.",
+            assumptions=[
+                "Fixed monthly obligations remain near the recent 30-day level.",
+                "Liquid reserves should come before long-term investing when the cash cushion is under roughly six weeks.",
+            ],
+        )
+
+    investment_amount = round(max(50.0, min(monthly_surplus * 0.3, safe.safe_to_spend_this_week * 1.8)), 2)
+    return InvestmentGuidanceSchema(
+        posture="invest_now",
+        title="Start a steady investment contribution",
+        summary="Current cash flow, buffer strength, and debt pressure support a modest recurring contribution.",
+        rationale="There is positive surplus after current obligations, interest leakage is contained, and the liquid buffer is strong enough to support long-term investing.",
+        recommended_investment_amount=investment_amount,
+        priority_action_amount=investment_amount,
+        priority_destination="Diversified index fund",
+        investment_channel="Broad-market index fund",
+        cadence="monthly",
+        monthly_surplus=monthly_surplus,
+        fee_and_interest_leakage=monthly["leakage"],
+        max_apr=round(max_apr, 1) if max_apr is not None else None,
+        liquid_buffer_months=liquid_buffer_months,
+        why_now="This is the point where a steady contribution can grow without materially weakening near-term flexibility.",
+        assumptions=[
+            "Surplus cash is stable enough to repeat monthly.",
+            "Existing debt pressure is low enough that investing is no longer clearly dominated by debt payoff.",
+        ],
+    )
+
+
 def _recommendation_priority(urgency: float, impact: float, risk_reduction: float, feasibility: float, context_fit: float, *, boost: float = 0.0) -> float:
     return round((0.30 * urgency + 0.25 * impact + 0.20 * risk_reduction + 0.15 * feasibility + 0.10 * context_fit) + boost, 3)
 
@@ -649,8 +772,8 @@ def compute_recommendations(
     health: FinancialHealthScoreSchema,
     risks: list[RiskAlertSchema],
     debt: DebtStrategyRunSchema,
+    investment: InvestmentGuidanceSchema | None = None,
 ) -> list[RecommendationSchema]:
-    balance = latest_balance_summary(context)
     monthly = monthly_totals(context)
     categories = category_breakdown(context)
     recommendations: list[RecommendationSchema] = []
@@ -675,10 +798,9 @@ def compute_recommendations(
                 priority_score=_recommendation_priority(95, 82, 90, 78, 94, boost=0.04),
             )
         )
-
     highest_strategy = next((item for item in debt.strategies if item.strategy == debt.recommended_strategy), None)
-    if highest_strategy and highest_strategy.suggested_allocations:
-        top_target = highest_strategy.suggested_allocations[0]
+    top_target = recommended_debt_target(debt)
+    if highest_strategy and top_target:
         recommendations.append(
             RecommendationSchema(
                 id=f"rec-{context.user.persona_key}-debt-target",
@@ -759,6 +881,26 @@ def compute_recommendations(
                 assumptions=["Recent charges are representative of the current cycle.", "No promotional APR offsets are present."],
                 created_at=created_at,
                 priority_score=_recommendation_priority(74, 78, 80, 70, 76, boost=0.02),
+            )
+        )
+
+    if investment and investment.posture == "invest_now" and investment.recommended_investment_amount > 0:
+        recommendations.append(
+            RecommendationSchema(
+                id=f"rec-{context.user.persona_key}-invest",
+                title="Start a steady investment contribution",
+                summary=investment.summary,
+                rationale=investment.rationale,
+                impact_estimate=f"Start with about ${investment.recommended_investment_amount:.0f} per month into a diversified channel.",
+                urgency="routine",
+                confidence=0.76,
+                category="investment",
+                affected_accounts=[],
+                suggested_action_amount=investment.recommended_investment_amount,
+                why_now=investment.why_now,
+                assumptions=investment.assumptions,
+                created_at=created_at,
+                priority_score=_recommendation_priority(56, 64, 52, 74, 72),
             )
         )
 
@@ -931,7 +1073,8 @@ def persist_pipeline(db: Session, persona_id: str) -> None:
     health = compute_financial_health(context, safe)
     risks = compute_risks(context, safe)
     debt = compute_debt_strategies(context, safe)
-    recommendations = compute_recommendations(context, safe, health, risks, debt)
+    investment = compute_investment_guidance(context, safe, debt)
+    recommendations = compute_recommendations(context, safe, health, risks, debt, investment)
     review = build_monthly_review(context, health, safe)
     sanitization = SanitizationService(db)
 
@@ -1152,7 +1295,9 @@ def build_dashboard_response(db: Session, persona_id: str) -> DashboardResponse:
     safe = compute_safe_to_spend(context)
     health = compute_financial_health(context, safe)
     risks = compute_risks(context, safe)
-    recommendations = compute_recommendations(context, safe, health, risks, compute_debt_strategies(context, safe))
+    debt = compute_debt_strategies(context, safe)
+    investment_guidance = compute_investment_guidance(context, safe, debt)
+    recommendations = compute_recommendations(context, safe, health, risks, debt, investment_guidance)
     monthly = monthly_totals(context)
     return DashboardResponse(
         persona_id=persona_id,
@@ -1161,6 +1306,7 @@ def build_dashboard_response(db: Session, persona_id: str) -> DashboardResponse:
         balance_summary=balance,
         financial_health=health,
         safe_to_spend=safe,
+        investment_guidance=investment_guidance,
         top_recommendations=recommendations[:3],
         risks=risks[:3],
         spend_by_category=category_breakdown(context)[:6],

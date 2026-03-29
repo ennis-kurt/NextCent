@@ -7,6 +7,7 @@ import type {
   DashboardResponse,
   DebtStrategyRun,
   FinancialHealthScore,
+  InvestmentGuidance,
   MonthlyReview,
   PersonaSummary,
   SafeToSpendSnapshot,
@@ -53,6 +54,10 @@ export async function getSubscriptions(personaId: string) {
 
 export async function getDebtStrategies(personaId: string) {
   return fetchJson<DebtStrategyRun>(`/debt-strategies?persona_id=${personaId}`);
+}
+
+export async function getInvestmentGuidance(personaId: string) {
+  return fetchJson<InvestmentGuidance>(`/investment-guidance?persona_id=${personaId}`);
 }
 
 export async function getFinancialHealth(personaId: string) {

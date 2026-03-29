@@ -12,6 +12,7 @@ from .finance import (
     build_subscription_summaries,
     compute_debt_strategies,
     compute_financial_health,
+    compute_investment_guidance,
     compute_recommendations,
     compute_risks,
     compute_safe_to_spend,
@@ -42,7 +43,8 @@ def answer_chat(db: Session, persona_id: str, session_id: str, message: str) -> 
     health = compute_financial_health(context, safe)
     risks = compute_risks(context, safe)
     debt = compute_debt_strategies(context, safe)
-    recommendations = compute_recommendations(context, safe, health, risks, debt)
+    investment = compute_investment_guidance(context, safe, debt)
+    recommendations = compute_recommendations(context, safe, health, risks, debt, investment)
     subscriptions = build_subscription_summaries(context)
     intent = infer_intent(message)
 

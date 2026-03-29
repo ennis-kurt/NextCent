@@ -3,7 +3,7 @@ import { PageFrame } from "@/components/page-frame";
 import { SectionCard } from "@/components/section-card";
 import { getMonthlyReviews } from "@/lib/api";
 import { getPageFramePersonas } from "@/lib/page-data";
-import { formatCurrency } from "@/lib/format";
+import { formatCurrency, formatMonthYear } from "@/lib/format";
 
 export default async function MonthlyReviewPage({
   searchParams
@@ -15,8 +15,33 @@ export default async function MonthlyReviewPage({
   const [personas, reviews] = await Promise.all([getPageFramePersonas(), getMonthlyReviews(personaId)]);
   const [review] = reviews;
 
+  if (!review) {
+    return (
+      <PageFrame pathname="/app/monthly-review" personaId={personaId} personas={personas}>
+        <SectionCard
+          eyebrow="Monthly Review"
+          title="No monthly review is available yet"
+          description="A wrap-up will appear once this persona has enough cycle data to summarize responsibly."
+        >
+          <div className="rounded-[24px] border border-dashed border-[var(--pa-border)] bg-[var(--pa-surface)] p-8 text-center text-sm leading-7 text-[var(--pa-text-muted)]">
+            The rest of this page is intentionally held back until the product has a month-end summary worth reviewing.
+          </div>
+        </SectionCard>
+      </PageFrame>
+    );
+  }
+
   return (
     <PageFrame pathname="/app/monthly-review" personaId={personaId} personas={personas}>
+      <SectionCard
+        eyebrow="Monthly Review"
+        title={`${formatMonthYear(review.month_start)} wrap-up`}
+        description={review.summary}
+      >
+        <div className="rounded-[24px] border border-[var(--pa-border)] bg-[var(--pa-surface)] p-5 text-sm leading-7 text-[var(--pa-text-muted)]">
+          This review combines the last cycle’s spending, leakage, and debt movement into a single executive summary before the next month starts.
+        </div>
+      </SectionCard>
       <section className="grid gap-4 xl:grid-cols-4">
         <MetricCard label="Income" value={formatCurrency(review.income)} tone="success" />
         <MetricCard label="Spending" value={formatCurrency(review.total_spending)} tone="warning" />

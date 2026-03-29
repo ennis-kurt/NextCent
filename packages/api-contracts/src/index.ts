@@ -140,6 +140,24 @@ export interface MonthlyReview {
   next_month_actions: string[];
 }
 
+export interface InvestmentGuidance {
+  posture: "invest_now" | "debt_first" | "buffer_first";
+  title: string;
+  summary: string;
+  rationale: string;
+  recommended_investment_amount: number;
+  priority_action_amount: number;
+  priority_destination: string;
+  investment_channel: string;
+  cadence: "monthly" | "this_cycle";
+  monthly_surplus: number;
+  fee_and_interest_leakage: number;
+  max_apr: number | null;
+  liquid_buffer_months: number;
+  why_now: string;
+  assumptions: string[];
+}
+
 export interface DashboardResponse {
   persona_id: string;
   persona_name: string;
@@ -147,6 +165,7 @@ export interface DashboardResponse {
   balance_summary: BalanceSummary;
   financial_health: FinancialHealthScore;
   safe_to_spend: SafeToSpendSnapshot;
+  investment_guidance: InvestmentGuidance;
   top_recommendations: Recommendation[];
   risks: RiskAlert[];
   spend_by_category: CategorySpend[];

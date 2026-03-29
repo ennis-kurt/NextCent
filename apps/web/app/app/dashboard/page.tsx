@@ -1,4 +1,4 @@
-import { AlertTriangle, ArrowDownCircle, ArrowUpRight, BadgeDollarSign, Shield } from "lucide-react";
+import { AlertTriangle, ArrowDownCircle, ArrowUpRight, BadgeDollarSign, Shield, TrendingUp, WalletCards } from "lucide-react";
 
 import { ActionSpotlight } from "@/components/action-spotlight";
 import { InsightCard } from "@/components/insight-card";
@@ -7,7 +7,7 @@ import { PageFrame } from "@/components/page-frame";
 import { SectionCard } from "@/components/section-card";
 import { ExpandableNote } from "@/components/expandable-note";
 import { SpendBreakdownChart } from "@/components/charts";
-import { getDashboard } from "@/lib/api";
+import { getCreditSummary, getDashboard, getDebtStrategies } from "@/lib/api";
 import { getPageFramePersonas } from "@/lib/page-data";
 import { formatCurrency, formatDate, formatNumber } from "@/lib/format";
 
@@ -18,7 +18,16 @@ export default async function DashboardPage({
 }) {
   const { persona } = await searchParams;
   const personaId = persona ?? "high-debt-strong-income";
-  const [personas, dashboard] = await Promise.all([getPageFramePersonas(), getDashboard(personaId)]);
+  const [personas, dashboard, debt, credit] = await Promise.all([
+    getPageFramePersonas(),
+    getDashboard(personaId),
+    getDebtStrategies(personaId),
+    getCreditSummary(personaId)
+  ]);
+  const recommendedDebtStrategy = debt.strategies.find((strategy) => strategy.strategy === debt.recommended_strategy);
+  const debtTarget = recommendedDebtStrategy?.suggested_allocations[0];
+  const debtTargetCard = credit.cards.find((card) => card.id === String(debtTarget?.account_id));
+  const investment = dashboard.investment_guidance;
 
   return (
     <PageFrame pathname="/app/dashboard" personaId={personaId} personas={personas}>
@@ -178,6 +187,78 @@ export default async function DashboardPage({
           </div>
         </SectionCard>
       </section>
+
+      <SectionCard
+        eyebrow="Capital Allocation"
+        title="Debt vs investing right now"
+        description="Decide whether the next surplus dollars should attack APR, stay liquid, or start compounding."
+        descriptionDetail="This keeps the card-payment target and the investment recommendation in the same frame so the app can explain why the next dollar should go to debt, cash, or a diversified investment channel."
+      >
+        <div className="grid gap-4 xl:grid-cols-2">
+          <div className="rounded-[24px] border border-[var(--pa-border)] bg-[var(--pa-surface)] p-5 transition-[transform,box-shadow,border-color] duration-200 hover:-translate-y-0.5 hover:border-[rgba(15,23,32,0.16)] hover:shadow-[0_18px_30px_rgba(8,15,22,0.08)]">
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <p className="text-[11px] uppercase tracking-[0.18em] text-[var(--pa-text-soft)]">Credit card payment suggestion</p>
+                <h3 className="mt-2 font-display text-xl text-[var(--pa-text)]">
+                  {debtTargetCard?.display_name ?? recommendedDebtStrategy?.title ?? "Debt priority"}
+                </h3>
+              </div>
+              <div className="rounded-2xl border border-[var(--pa-border)] bg-white/80 p-3 text-[var(--pa-warning)]">
+                <ArrowDownCircle aria-hidden="true" className="h-5 w-5" />
+              </div>
+            </div>
+            <div className="mt-5 grid gap-3 md:grid-cols-2">
+              <MetricCard
+                label="Suggested payment"
+                value={formatCurrency(Number(debtTarget?.suggested_payment ?? 0))}
+                tone="warning"
+                detail={recommendedDebtStrategy ? `${recommendedDebtStrategy.title} is the current best-fit repayment posture.` : "No repayment target is active."}
+              />
+              <MetricCard
+                label="Target account"
+                value={debtTargetCard?.sanitized_name ?? "Highest-impact card"}
+                detail={debt.rationale}
+              />
+            </div>
+            <p className="mt-5 text-sm leading-7 text-[var(--pa-text-muted)]">
+              {debtTarget
+                ? `Move about ${formatCurrency(Number(debtTarget.suggested_payment ?? 0))} toward this card before splitting extra dollars elsewhere.`
+                : "No extra debt payment target is active in this seeded scenario."}
+            </p>
+          </div>
+
+          <div className="rounded-[24px] border border-[rgba(31,116,104,0.18)] bg-[linear-gradient(180deg,rgba(231,243,240,0.64),rgba(255,255,255,0.94))] p-5 transition-[transform,box-shadow,border-color] duration-200 hover:-translate-y-0.5 hover:shadow-[0_18px_30px_rgba(8,15,22,0.08)]">
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <p className="text-[11px] uppercase tracking-[0.18em] text-[var(--pa-text-soft)]">Investment suggestion</p>
+                <h3 className="mt-2 font-display text-xl text-[var(--pa-text)]">{investment.title}</h3>
+              </div>
+              <div className="rounded-2xl border border-[rgba(31,116,104,0.18)] bg-white/82 p-3 text-[var(--pa-primary)]">
+                {investment.posture === "invest_now" ? (
+                  <TrendingUp aria-hidden="true" className="h-5 w-5" />
+                ) : (
+                  <WalletCards aria-hidden="true" className="h-5 w-5" />
+                )}
+              </div>
+            </div>
+            <div className="mt-5 grid gap-3 md:grid-cols-2">
+              <MetricCard
+                label="Invest now"
+                value={formatCurrency(investment.recommended_investment_amount)}
+                tone={investment.posture === "invest_now" ? "success" : "default"}
+                detail={investment.posture === "invest_now" ? `${investment.investment_channel} is the suggested channel.` : "New investing should wait for the current priorities below."}
+              />
+              <MetricCard
+                label="Best current destination"
+                value={investment.priority_destination}
+                tone={investment.posture === "debt_first" ? "warning" : investment.posture === "buffer_first" ? "primary" : "success"}
+                detail={`${formatCurrency(investment.priority_action_amount)} ${investment.cadence === "monthly" ? "per month" : "this cycle"}.`}
+              />
+            </div>
+            <p className="mt-5 text-sm leading-7 text-[var(--pa-text-muted)]">{investment.summary}</p>
+          </div>
+        </div>
+      </SectionCard>
 
       <section className="grid gap-6 xl:grid-cols-2">
         <SectionCard eyebrow="Top 3 Actions" title="Recommended next moves">

@@ -5,8 +5,9 @@ import { Bot, SendHorizontal } from "lucide-react";
 import { useId, useState, useTransition } from "react";
 
 import { createChatSession, getLatestChatSession, sendChatMessage } from "@/lib/api";
-import { formatDateTime } from "@/lib/format";
+import { formatCurrency, formatDateTime, formatNumber, titleCase } from "@/lib/format";
 
+import { ExpandableNote } from "./expandable-note";
 import { SectionCard } from "./section-card";
 import { StatusPill } from "./status-pill";
 
@@ -21,6 +22,62 @@ function messageTone(role: "user" | "assistant") {
   return role === "assistant"
     ? "border-[var(--pa-primary-soft)] bg-[var(--pa-primary-soft)]/55"
     : "border-[var(--pa-border)] bg-white";
+}
+
+const SOURCE_FIELD_ORDER = [
+  "title",
+  "strategy",
+  "summary",
+  "impact_estimate",
+  "projected_payoff_months",
+  "projected_interest_cost",
+  "why_choose_it"
+];
+
+function sourceTitle(card: Record<string, unknown>, index: number) {
+  if (typeof card.title === "string") return card.title;
+  if (typeof card.strategy === "string") return `${titleCase(card.strategy)} strategy`;
+  if (typeof card.category === "string") return titleCase(card.category);
+  return `Source card ${index + 1}`;
+}
+
+function formatSourceValue(key: string, value: unknown) {
+  if (typeof value === "number") {
+    if (key.includes("cost") || key.includes("payment") || key.includes("amount")) {
+      return formatCurrency(value);
+    }
+    if (key.includes("month")) {
+      return `${formatNumber(value)} months`;
+    }
+    return formatNumber(value);
+  }
+
+  if (typeof value === "string") {
+    if (key === "strategy" || key === "category") {
+      return titleCase(value);
+    }
+    return value;
+  }
+
+  return null;
+}
+
+function sourceRows(card: Record<string, unknown>) {
+  const preferred = SOURCE_FIELD_ORDER.flatMap((key) => {
+    const formatted = formatSourceValue(key, card[key]);
+    return formatted ? [{ label: titleCase(key), value: formatted }] : [];
+  });
+
+  if (preferred.length > 0) {
+    return preferred.slice(0, 5);
+  }
+
+  return Object.entries(card)
+    .flatMap(([key, value]) => {
+      const formatted = formatSourceValue(key, value);
+      return formatted ? [{ label: titleCase(key), value: formatted }] : [];
+    })
+    .slice(0, 5);
 }
 
 export function ChatPanel({
@@ -129,6 +186,49 @@ export function ChatPanel({
                   </ul>
                 </div>
               </div>
+              {answer.assumptions.length > 0 ? (
+                <ExpandableNote
+                  detail={
+                    <ul className="space-y-2">
+                      {answer.assumptions.map((assumption) => (
+                        <li key={assumption}>{assumption}</li>
+                      ))}
+                    </ul>
+                  }
+                  label="Grounding"
+                  summary="Review the assumptions behind this answer."
+                />
+              ) : null}
+              {answer.source_cards.length > 0 ? (
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between gap-3">
+                    <p className="text-xs uppercase tracking-[0.22em] text-[var(--pa-text-soft)]">Source cards</p>
+                    <StatusPill>{answer.source_cards.length} attached</StatusPill>
+                  </div>
+                  <div className="grid gap-4 md:grid-cols-2">
+                    {answer.source_cards.map((card, index) => {
+                      const rows = sourceRows(card);
+                      return (
+                        <article key={`${sourceTitle(card, index)}-${index}`} className="rounded-2xl border border-[var(--pa-border)] bg-white p-4">
+                          <p className="font-semibold text-[var(--pa-text)]">{sourceTitle(card, index)}</p>
+                          <div className="mt-3 space-y-2 text-sm text-[var(--pa-text-muted)]">
+                            {rows.length > 0 ? (
+                              rows.map((row) => (
+                                <div key={`${row.label}-${row.value}`} className="flex items-start justify-between gap-4">
+                                  <span className="text-[var(--pa-text-soft)]">{row.label}</span>
+                                  <span className="text-right font-medium text-[var(--pa-text)]">{row.value}</span>
+                                </div>
+                              ))
+                            ) : (
+                              <p>No source fields are available for structured rendering.</p>
+                            )}
+                          </div>
+                        </article>
+                      );
+                    })}
+                  </div>
+                </div>
+              ) : null}
             </div>
           ) : null}
         </div>

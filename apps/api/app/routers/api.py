@@ -25,6 +25,7 @@ from ..schemas import (
     DashboardResponse,
     DebtStrategyRunSchema,
     FinancialHealthScoreSchema,
+    InvestmentGuidanceSchema,
     MonthlyReviewSchema,
     PersonaSummary,
     RecommendationSchema,
@@ -44,6 +45,7 @@ from ..services.finance import (
     build_dashboard_response,
     build_monthly_review,
     build_subscription_summaries,
+    compute_investment_guidance,
     compute_debt_strategies,
     compute_financial_health,
     compute_recommendations,
@@ -183,7 +185,8 @@ def get_recommendations(persona_id: str | None = Query(default=None), db: Sessio
     health = compute_financial_health(context, safe)
     risks = compute_risks(context, safe)
     debt = compute_debt_strategies(context, safe)
-    return compute_recommendations(context, safe, health, risks, debt)
+    investment = compute_investment_guidance(context, safe, debt)
+    return compute_recommendations(context, safe, health, risks, debt, investment)
 
 
 @router.get("/alerts", response_model=list[RiskAlertSchema])
@@ -215,6 +218,15 @@ def get_debt_strategies(persona_id: str | None = Query(default=None), db: Sessio
     context = fetch_user_context(db, user.persona_key)
     safe = compute_safe_to_spend(context)
     return compute_debt_strategies(context, safe)
+
+
+@router.get("/investment-guidance", response_model=InvestmentGuidanceSchema)
+def get_investment_guidance(persona_id: str | None = Query(default=None), db: Session = Depends(get_db)):
+    user = resolve_persona(persona_id, db)
+    context = fetch_user_context(db, user.persona_key)
+    safe = compute_safe_to_spend(context)
+    debt = compute_debt_strategies(context, safe)
+    return compute_investment_guidance(context, safe, debt)
 
 
 @router.post("/simulate", response_model=SimulationResultSchema)

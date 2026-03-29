@@ -24,6 +24,11 @@ const monthDayFormatter = new Intl.DateTimeFormat("en-US", {
   day: "numeric"
 });
 
+const monthYearFormatter = new Intl.DateTimeFormat("en-US", {
+  month: "long",
+  year: "numeric"
+});
+
 const shortDateTimeFormatter = new Intl.DateTimeFormat("en-US", {
   month: "short",
   day: "numeric",
@@ -50,6 +55,11 @@ export function formatNumber(value: number) {
 export function formatDate(value: string | null) {
   if (!value) return "Not projected";
   return monthDayFormatter.format(new Date(value));
+}
+
+export function formatMonthYear(value: string | null) {
+  if (!value) return "Unavailable";
+  return monthYearFormatter.format(new Date(value));
 }
 
 export function formatDateTime(value: string) {

@@ -4,6 +4,7 @@ from app.database import SessionLocal
 from app.services.finance import (
     compute_debt_strategies,
     compute_financial_health,
+    compute_investment_guidance,
     compute_safe_to_spend,
     fetch_user_context,
 )
@@ -46,5 +47,31 @@ def test_financial_health_score_stays_in_range():
         health = compute_financial_health(context, safe)
         assert 0 <= health.overall_score <= 100
         assert health.credit_health_score < 60
+    finally:
+        db.close()
+
+
+def test_investment_guidance_prefers_debt_for_high_apr_persona():
+    db = SessionLocal()
+    try:
+        context = fetch_user_context(db, "credit-score-pressure")
+        safe = compute_safe_to_spend(context)
+        debt = compute_debt_strategies(context, safe)
+        investment = compute_investment_guidance(context, safe, debt)
+        assert investment.posture == "debt_first"
+        assert investment.recommended_investment_amount == 0
+    finally:
+        db.close()
+
+
+def test_investment_guidance_allows_investing_for_healthy_persona():
+    db = SessionLocal()
+    try:
+        context = fetch_user_context(db, "healthy-cashflow")
+        safe = compute_safe_to_spend(context)
+        debt = compute_debt_strategies(context, safe)
+        investment = compute_investment_guidance(context, safe, debt)
+        assert investment.posture == "invest_now"
+        assert investment.recommended_investment_amount > 0
     finally:
         db.close()

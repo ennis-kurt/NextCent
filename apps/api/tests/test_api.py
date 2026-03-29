@@ -19,7 +19,16 @@ def test_dashboard_contains_recommendations(client):
     assert response.status_code == 200
     data = response.json()
     assert data["safe_to_spend"]["spending_velocity_status"] in {"safe", "caution", "likely_overspend"}
+    assert data["investment_guidance"]["posture"] in {"invest_now", "debt_first", "buffer_first"}
     assert len(data["top_recommendations"]) >= 1
+
+
+def test_investment_guidance_endpoint(client):
+    response = client.get("/api/v1/investment-guidance", params={"persona_id": "healthy-cashflow"})
+    assert response.status_code == 200
+    data = response.json()
+    assert data["posture"] in {"invest_now", "debt_first", "buffer_first"}
+    assert data["priority_destination"]
 
 
 def test_simulation_endpoint(client):
