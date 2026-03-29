@@ -1,9 +1,11 @@
 import { AlertTriangle, ArrowDownCircle, ArrowUpRight, BadgeDollarSign, Shield } from "lucide-react";
 
+import { ActionSpotlight } from "@/components/action-spotlight";
 import { InsightCard } from "@/components/insight-card";
 import { MetricCard } from "@/components/metric-card";
 import { PageFrame } from "@/components/page-frame";
 import { SectionCard } from "@/components/section-card";
+import { ExpandableNote } from "@/components/expandable-note";
 import { SpendBreakdownChart } from "@/components/charts";
 import { getDashboard } from "@/lib/api";
 import { getPageFramePersonas } from "@/lib/page-data";
@@ -20,6 +22,13 @@ export default async function DashboardPage({
 
   return (
     <PageFrame pathname="/app/dashboard" personaId={personaId} personas={personas}>
+      <ActionSpotlight
+        archetype={dashboard.archetype}
+        personaName={dashboard.persona_name}
+        recommendation={dashboard.top_recommendations[0]}
+        safeToSpendThisWeek={dashboard.safe_to_spend.safe_to_spend_this_week}
+      />
+
       <section className="grid gap-4 xl:grid-cols-4">
         <MetricCard
           label="Total cash"
@@ -70,6 +79,54 @@ export default async function DashboardPage({
               <span>Risk buffer: {formatCurrency(dashboard.safe_to_spend.risk_buffer)}</span>
               <span>Savings floor: {formatCurrency(dashboard.safe_to_spend.savings_floor)}</span>
             </div>
+            <ExpandableNote
+              className="mt-4"
+              detail={
+                <div className="space-y-4">
+                  <div className="grid gap-3 sm:grid-cols-2">
+                    {[
+                      {
+                        label: "Expected income before payday",
+                        value: formatCurrency(dashboard.safe_to_spend.expected_income_before_payday)
+                      },
+                      {
+                        label: "Fixed obligations before payday",
+                        value: formatCurrency(dashboard.safe_to_spend.fixed_obligations_before_payday)
+                      },
+                      {
+                        label: "Risk buffer",
+                        value: formatCurrency(dashboard.safe_to_spend.risk_buffer)
+                      },
+                      {
+                        label: "Savings floor",
+                        value: formatCurrency(dashboard.safe_to_spend.savings_floor)
+                      }
+                    ].map((item) => (
+                      <div
+                        key={item.label}
+                        className="rounded-[16px] border border-[rgba(15,23,32,0.08)] bg-white/72 px-4 py-3"
+                      >
+                        <p className="text-[11px] uppercase tracking-[0.18em] text-[var(--pa-text-soft)]">{item.label}</p>
+                        <p className="mt-2 font-display text-xl tabular-nums text-[var(--pa-text)]">{item.value}</p>
+                      </div>
+                    ))}
+                  </div>
+                  <div className="rounded-[18px] border border-[rgba(15,23,32,0.1)] bg-[var(--pa-primary-soft)]/45 px-4 py-4">
+                    <div className="flex flex-wrap items-center justify-between gap-3">
+                      <p className="text-[11px] uppercase tracking-[0.18em] text-[var(--pa-text-soft)]">Resulting runway to payday</p>
+                      <p className="font-display text-2xl tabular-nums text-[var(--pa-text)]">
+                        {formatCurrency(dashboard.safe_to_spend.safe_to_spend_until_payday)}
+                      </p>
+                    </div>
+                    <p className="mt-2 text-sm leading-6 text-[var(--pa-text-muted)]">
+                      The weekly Safe to Spend number is the paced view of this remaining runway for the current cycle.
+                    </p>
+                  </div>
+                </div>
+              }
+              label="Show math"
+              summary="Review the deterministic inputs behind this runway before pacing the weekly number."
+            />
           </div>
         </SectionCard>
         <SectionCard

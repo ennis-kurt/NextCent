@@ -8,7 +8,8 @@ export function MetricCard({
   tone = "default",
   detail,
   change,
-  icon
+  icon,
+  className
 }: {
   label: string;
   value: string;
@@ -16,6 +17,7 @@ export function MetricCard({
   detail?: string;
   change?: string;
   icon?: ReactNode;
+  className?: string;
 }) {
   const tones = {
     default: {
@@ -48,7 +50,8 @@ export function MetricCard({
   return (
     <div
       className={cn(
-        "relative overflow-hidden rounded-[28px] border border-[var(--pa-border)] p-5 shadow-[var(--pa-shadow-sm)]",
+        "relative overflow-hidden rounded-[28px] border border-[var(--pa-border)] p-5 shadow-[var(--pa-shadow-sm)] transition-[transform,box-shadow,border-color] duration-200 hover:-translate-y-0.5 hover:border-[rgba(15,23,32,0.16)] hover:shadow-[0_18px_30px_rgba(8,15,22,0.08)]",
+        className,
         tones[tone].surface
       )}
     >

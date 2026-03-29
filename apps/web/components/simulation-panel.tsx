@@ -6,6 +6,7 @@ import { useId, useState, useTransition } from "react";
 import { getSimulationHistory, runSimulation } from "@/lib/api";
 import { formatCurrency, formatDateTime, formatNumber, titleCase } from "@/lib/format";
 
+import { ExpandableNote } from "./expandable-note";
 import { SectionCard } from "./section-card";
 import { StatusPill } from "./status-pill";
 
@@ -132,6 +133,19 @@ export function SimulationPanel({
               {isPending ? "Running simulation…" : error ?? ""}
             </p>
             {error ? <p className="text-sm text-[var(--pa-danger)]">{error}</p> : null}
+            <ExpandableNote
+              className="pt-1"
+              detail={
+                <ul className="space-y-2">
+                  <li>Uses seeded demo accounts and recent behavior only.</li>
+                  <li>Assumes the current income pattern stays broadly stable during the comparison.</li>
+                  <li>Does not forecast unknown emergencies, life events, or one-off income shocks.</li>
+                  <li>Read each estimate together with the result warnings and assumptions panel.</li>
+                </ul>
+              }
+              label="Model boundary"
+              summary="See what this projection assumes before treating the result as a decision."
+            />
           </div>
         </form>
         <div className="space-y-6">
@@ -193,7 +207,7 @@ export function SimulationPanel({
                 history.map((item) => (
                   <button
                     key={item.scenario_id}
-                    className="w-full rounded-2xl border border-[var(--pa-border)] bg-white p-4 text-left transition-[background-color,border-color,color] duration-150 hover:border-[rgba(15,23,32,0.2)] hover:bg-[var(--pa-primary-soft)]/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--pa-primary)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--pa-surface)]"
+                    className="w-full rounded-2xl border border-[var(--pa-border)] bg-white p-4 text-left transition-[background-color,border-color,color,transform,box-shadow] duration-150 hover:-translate-y-0.5 hover:border-[rgba(15,23,32,0.2)] hover:bg-[var(--pa-primary-soft)]/30 hover:shadow-[0_18px_30px_rgba(8,15,22,0.08)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--pa-primary)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--pa-surface)]"
                     type="button"
                     onClick={() => setResult(item.result)}
                   >

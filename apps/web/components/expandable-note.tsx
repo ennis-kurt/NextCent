@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import { ChevronDown } from "lucide-react";
 
 import { cn } from "@/lib/utils";
@@ -9,8 +10,8 @@ export function ExpandableNote({
   tone = "default",
   className
 }: {
-  summary: string;
-  detail: string;
+  summary: ReactNode;
+  detail: ReactNode;
   label?: string;
   tone?: "default" | "inverted";
   className?: string;
