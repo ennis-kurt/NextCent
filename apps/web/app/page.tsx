@@ -88,7 +88,7 @@ export default function LandingPage() {
                   ))}
                 </div>
                 <div className="mt-6 rounded-[24px] border border-white/10 bg-white/5 p-4 text-sm leading-6 text-white/70">
-                  Personal Accountant AI separates facts, estimates, and recommended next actions so the interface stays calm under pressure.
+                  NextCent separates facts, estimates, and recommended next actions so the interface stays calm under pressure.
                 </div>
               </div>
             </div>

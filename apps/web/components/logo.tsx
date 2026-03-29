@@ -13,26 +13,28 @@ export function Logo({
     <div className="flex items-center gap-4">
       <div
         className={cn(
-          "flex h-12 w-12 items-center justify-center rounded-[18px] border text-sm font-semibold shadow-[var(--pa-shadow-sm)]",
+          "flex h-12 w-12 items-center justify-center rounded-[18px] border shadow-[var(--pa-shadow-sm)]",
           inverted
             ? "border-white/10 bg-[linear-gradient(160deg,#d6b06c,#1f7468_52%,#0f1720)] text-white"
             : "border-white/70 bg-[linear-gradient(160deg,#1f7468,#0f1720_72%)] text-white"
         )}
       >
-        PA
+        <span className="font-display text-[1.05rem] font-semibold tracking-[-0.08em]">
+          N<span className="ml-[-0.06em]">¢</span>
+        </span>
       </div>
       <div className="min-w-0">
         <p
           className={cn(
-            "font-display text-sm uppercase tracking-[0.24em]",
-            inverted ? "text-white/62" : "text-[var(--pa-text-soft)]"
+            "font-display text-[1.45rem] font-semibold tracking-[-0.04em]",
+            inverted ? "text-white" : "text-[var(--pa-text)]"
           )}
         >
-          Personal Accountant AI
+          NextCent
         </p>
         {showTagline ? (
           <p className={cn("text-sm", inverted ? "text-white/78" : "text-[var(--pa-text-muted)]")}>
-            Cash clarity. Debt discipline. Calm next actions.
+            Cash clarity. Debt discipline. Clear next moves.
           </p>
         ) : null}
       </div>
