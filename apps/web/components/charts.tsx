@@ -190,6 +190,14 @@ export function BalanceHistoryChart({
               labelStyle={{ color: "#12202b", fontWeight: 600 }}
             />
             <Area type="monotone" dataKey="balance" stroke={color} fill={`url(#balanceFill-${color.replace("#", "")})`} strokeWidth={2.5} />
+            <Line
+              type="monotone"
+              dataKey="balance"
+              stroke={color}
+              strokeWidth={2.75}
+              dot={false}
+              activeDot={{ r: 4, fill: color, stroke: "#fffdf8", strokeWidth: 1.5 }}
+            />
           </AreaChart>
         </ResponsiveContainer>
       </div>
