@@ -31,6 +31,31 @@ function deriveBranchPreviewApiBase() {
   return `https://${branchUrl.replace(/^web-git-/, "api-git-")}/api/v1`;
 }
 
+function isProtectedBranchPreviewApi(baseUrl: string) {
+  return baseUrl.startsWith("https://api-git-");
+}
+
+function buildApiHeaders(initHeaders?: HeadersInit) {
+  const headers = new Headers(initHeaders);
+
+  if (!headers.has("Content-Type")) {
+    headers.set("Content-Type", "application/json");
+  }
+
+  if (typeof window === "undefined" && isProtectedBranchPreviewApi(API_BASE)) {
+    const bypassSecret =
+      process.env.API_VERCEL_AUTOMATION_BYPASS_SECRET ??
+      process.env.API_PROTECTION_BYPASS_SECRET ??
+      process.env.VERCEL_AUTOMATION_BYPASS_SECRET;
+
+    if (bypassSecret) {
+      headers.set("x-vercel-protection-bypass", bypassSecret);
+    }
+  }
+
+  return headers;
+}
+
 const API_BASE =
   deriveBranchPreviewApiBase() ??
   process.env.NEXT_PUBLIC_API_BASE_URL ??
@@ -40,14 +65,15 @@ async function fetchJson<T>(path: string, init?: RequestInit): Promise<T> {
   const response = await fetch(`${API_BASE}${path}`, {
     ...init,
     cache: "no-store",
-    headers: {
-      "Content-Type": "application/json",
-      ...(init?.headers ?? {})
-    }
+    headers: buildApiHeaders(init?.headers)
   });
 
   if (!response.ok) {
-    throw new Error(`API request failed for ${path}`);
+    const hint =
+      response.status === 401 || response.status === 403
+        ? " Protected preview API access may require a Vercel automation bypass secret."
+        : "";
+    throw new Error(`API request failed for ${path} with ${response.status}.${hint}`);
   }
 
   return response.json() as Promise<T>;
