@@ -138,6 +138,74 @@ def _month_day(base: date, day: int) -> date:
     return month_start.replace(day=min(day, last_day))
 
 
+def _history_snapshot_dates(months: int = 12) -> list[datetime]:
+    snapshots: list[datetime] = []
+    for offset in range(months - 1, -1, -1):
+        month_base = REFERENCE_DATE.replace(day=1) - relativedelta(months=offset)
+        snapshots.append(_safe_datetime(_month_day(month_base, REFERENCE_DATE.day), hour=7))
+    return snapshots
+
+
+def _series_from_current_value(
+    current_value: float,
+    *,
+    months: int,
+    oldest_multiplier: float,
+    rng: random.Random,
+    floor: float = 0.0,
+    noise: float = 0.05,
+) -> list[float]:
+    if months <= 1:
+        return [round(max(floor, current_value), 2)]
+
+    oldest_value = max(floor, current_value * oldest_multiplier)
+    values: list[float] = []
+    for index in range(months):
+        progress = index / (months - 1)
+        baseline = oldest_value + (current_value - oldest_value) * progress
+        if index == months - 1:
+            values.append(round(max(floor, current_value), 2))
+            continue
+        adjusted = max(floor, baseline * (1 + rng.uniform(-noise, noise)))
+        values.append(round(adjusted, 2))
+    values[-1] = round(max(floor, current_value), 2)
+    return values
+
+
+def _checking_oldest_multiplier(flags: list[str]) -> float:
+    if "healthy" in flags:
+        return 0.72
+    if "recovery" in flags:
+        return 0.58
+    if "tight-buffer" in flags or "paycheck-to-paycheck" in flags:
+        return 1.08
+    if "overdraft-fees" in flags:
+        return 1.2
+    return 0.9
+
+
+def _savings_oldest_multiplier(flags: list[str]) -> float:
+    if "healthy" in flags:
+        return 0.62
+    if "recovery" in flags:
+        return 0.75
+    if "tight-buffer" in flags:
+        return 0.9
+    return 0.82
+
+
+def _credit_oldest_multiplier(flags: list[str], card_seed: dict[str, Any]) -> float:
+    if card_seed.get("deferred_interest_offers"):
+        return 0.55
+    if "healthy" in flags or "recovery" in flags:
+        return 1.28
+    if "interest-leakage" in flags or "utilization-pressure" in flags:
+        return 0.72
+    if "spending-spike" in flags or "inefficient-payments" in flags:
+        return 0.8
+    return 0.95
+
+
 def _generate_variable_transactions(
     rng: random.Random,
     user_id: str,
@@ -242,48 +310,77 @@ def seed_users(db: Session) -> None:
             db.flush()
             card_accounts.append(account)
 
-        snapshot_time = _safe_datetime(REFERENCE_DATE, hour=7)
-        db.add(
-            AccountBalanceSnapshot(
-                user_id=user.id,
-                account_id=checking.id,
-                snapshot_at=snapshot_time,
-                current_balance=scenario["checking_balance"],
-                available_balance=max(0.0, scenario["checking_balance"] - 45),
-                pending_balance=45.0 if "tight-buffer" in scenario["flags"] else 0.0,
-            )
+        history_dates = _history_snapshot_dates(12)
+        checking_history = _series_from_current_value(
+            scenario["checking_balance"],
+            months=len(history_dates),
+            oldest_multiplier=_checking_oldest_multiplier(scenario["flags"]),
+            rng=rng,
+            floor=0.0,
+            noise=0.18 if "tight-buffer" in scenario["flags"] else 0.1,
         )
-
-        if "savings" in accounts:
+        for index, snapshot_time in enumerate(history_dates):
+            checking_balance = checking_history[index]
+            pending_balance = 45.0 if index == len(history_dates) - 1 and "tight-buffer" in scenario["flags"] else 0.0
             db.add(
                 AccountBalanceSnapshot(
                     user_id=user.id,
-                    account_id=accounts["savings"].id,
+                    account_id=checking.id,
                     snapshot_at=snapshot_time,
-                    current_balance=scenario["savings_balance"],
-                    available_balance=scenario["savings_balance"],
-                    pending_balance=0.0,
+                    current_balance=checking_balance,
+                    available_balance=max(0.0, checking_balance - pending_balance),
+                    pending_balance=pending_balance,
                 )
             )
+
+        if "savings" in accounts:
+            savings_history = _series_from_current_value(
+                scenario["savings_balance"],
+                months=len(history_dates),
+                oldest_multiplier=_savings_oldest_multiplier(scenario["flags"]),
+                rng=rng,
+                floor=0.0,
+                noise=0.08,
+            )
+            for snapshot_time, savings_balance in zip(history_dates, savings_history):
+                db.add(
+                    AccountBalanceSnapshot(
+                        user_id=user.id,
+                        account_id=accounts["savings"].id,
+                        snapshot_at=snapshot_time,
+                        current_balance=savings_balance,
+                        available_balance=savings_balance,
+                        pending_balance=0.0,
+                    )
+                )
 
         for idx, card in enumerate(scenario["credit_cards"]):
             account = card_accounts[idx]
-            db.add(
-                AccountBalanceSnapshot(
-                    user_id=user.id,
-                    account_id=account.id,
-                    snapshot_at=snapshot_time,
-                    current_balance=-card["balance"],
-                    available_balance=-(card["balance"]),
-                    pending_balance=0.0,
-                )
+            balance_history = _series_from_current_value(
+                card["balance"],
+                months=len(history_dates),
+                oldest_multiplier=_credit_oldest_multiplier(scenario["flags"], card),
+                rng=rng,
+                floor=0.0,
+                noise=0.07,
             )
+            for snapshot_time, balance_value in zip(history_dates, balance_history):
+                db.add(
+                    AccountBalanceSnapshot(
+                        user_id=user.id,
+                        account_id=account.id,
+                        snapshot_at=snapshot_time,
+                        current_balance=-balance_value,
+                        available_balance=-balance_value,
+                        pending_balance=0.0,
+                    )
+                )
 
         transactions: list[Transaction] = []
-        window_start = REFERENCE_DATE - timedelta(days=119)
-        weeks = 18
+        window_start = REFERENCE_DATE - timedelta(days=364)
+        weeks = 52
 
-        for paycheck_idx in range(10):
+        for paycheck_idx in range(30):
             payday = _nth_recent_payday(REFERENCE_DATE - timedelta(days=1), scenario["paycheck_frequency_days"], paycheck_idx)
             if payday < window_start:
                 continue
@@ -300,7 +397,7 @@ def seed_users(db: Session) -> None:
                 )
             )
 
-        for month_idx in range(4):
+        for month_idx in range(12):
             month_base = (REFERENCE_DATE.replace(day=1) - relativedelta(months=month_idx))
             rent_day = _month_day(month_base, 1)
             utilities_day = _month_day(month_base, 5)
@@ -449,7 +546,7 @@ def seed_users(db: Session) -> None:
             elif "healthy" in scenario["flags"]:
                 extra_payment = 150.0
 
-            for month_idx in range(6):
+            for month_idx in range(12):
                 month_base = (REFERENCE_DATE.replace(day=1) - relativedelta(months=month_idx))
                 due_day = _month_day(month_base, card["due_day"])
                 payment_amount = -(card["minimum_payment"] + extra_payment / max(1, len(scenario["credit_cards"])))
@@ -493,8 +590,27 @@ def seed_users(db: Session) -> None:
                         )
                     )
 
+            for offer in card.get("deferred_interest_offers", []):
+                started_on = date.fromisoformat(offer["started_on"])
+                if window_start <= started_on <= REFERENCE_DATE:
+                    transactions.append(
+                        _transaction(
+                            user_id=user.id,
+                            account_id=account.id,
+                            dt=_safe_datetime(started_on, hour=12),
+                            amount=-offer["deferred_amount"],
+                            merchant=f"{card['name'].upper()} SPECIAL FINANCING",
+                            description=f"{offer['label']} SPECIAL FINANCING PURCHASE",
+                            category_key="discretionary",
+                            metadata={
+                                "deferred_interest_offer_id": offer["id"],
+                                "deferred_interest_offer": True,
+                            },
+                        )
+                    )
+
         if "savings" in accounts and scenario["savings_balance"] > 0 and "tight-buffer" not in scenario["flags"]:
-            for month_idx in range(3):
+            for month_idx in range(12):
                 month_base = (REFERENCE_DATE.replace(day=1) - relativedelta(months=month_idx))
                 transfer_day = _month_day(month_base, 15)
                 transfer_amount = round(min(350.0, scenario["monthly_income"] * 0.05), 2)

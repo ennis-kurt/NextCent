@@ -69,9 +69,13 @@ class AccountSummary(ORMModel):
     credit_limit: float | None = None
     minimum_payment: float | None = None
     due_date: date | None = None
+    statement_close_date: date | None = None
     utilization_estimate: float | None = None
     interest_charged_this_month: float = 0.0
     interest_charged_last_six_months: float = 0.0
+    minimum_monthly_payment_to_avoid_deferred_interest: float | None = None
+    balance_history: list["BalanceHistoryPoint"] = Field(default_factory=list)
+    deferred_interest_offers: list["DeferredInterestOfferSchema"] = Field(default_factory=list)
 
 
 class BalanceSummary(BaseModel):
@@ -81,6 +85,33 @@ class BalanceSummary(BaseModel):
     liquid_cash: float
     checking_balance: float
     savings_balance: float
+
+
+class BalanceHistoryPoint(BaseModel):
+    as_of: date
+    balance: float
+
+
+class DeferredInterestOfferSchema(BaseModel):
+    id: str
+    label: str
+    promo_type: Literal["deferred_interest", "intro_apr"]
+    started_on: date | None = None
+    expires_on: date
+    deferred_amount: float
+    remaining_deferred_amount: float
+    estimated_deferred_interest_if_missed: float | None = None
+    days_remaining: int
+    required_monthly_payment_to_avoid_deferred_interest: float
+    status: Literal["active", "expiring_soon", "expired"]
+
+
+class CashFlowEvent(BaseModel):
+    date: date
+    kind: Literal["income", "bill", "subscription", "debt_due", "savings_transfer"]
+    label: str
+    amount: float
+    account_id: str | None = None
 
 
 class CategorySpend(BaseModel):
@@ -241,6 +272,8 @@ class CashFlowResponse(BaseModel):
     paycheck_to_paycheck_view: dict[str, Any]
     spending_velocity: dict[str, Any]
     category_breakdown: list[CategorySpend]
+    ending_balance_series: list[BalanceHistoryPoint]
+    upcoming_events: list[CashFlowEvent]
     monthly_series: list[dict[str, Any]]
 
 

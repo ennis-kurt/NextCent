@@ -32,13 +32,16 @@ from ..models import (
 )
 from ..schemas import (
     AccountSummary,
+    BalanceHistoryPoint,
     BalanceSummary,
     CashFlowResponse,
+    CashFlowEvent,
     CategorySpend,
     CreditSummaryResponse,
     DashboardResponse,
     DebtStrategyCard,
     DebtStrategyRunSchema,
+    DeferredInterestOfferSchema,
     FinancialHealthScoreSchema,
     HealthBreakdown,
     InvestmentGuidanceSchema,
@@ -64,6 +67,7 @@ class UserContext:
     user: User
     accounts: list[ConnectedAccount]
     snapshots: dict[str, AccountBalanceSnapshot]
+    snapshot_history: dict[str, list[AccountBalanceSnapshot]]
     transactions: list[Transaction]
     recurring: list[RecurringCharge]
     cards: list[CreditCardSummary]
@@ -81,9 +85,18 @@ def trailing_transactions(transactions: list[Transaction], days: int) -> list[Tr
 def fetch_user_context(db: Session, persona_id: str) -> UserContext:
     user = db.query(User).filter(User.persona_key == persona_id).one()
     accounts = db.query(ConnectedAccount).filter(ConnectedAccount.user_id == user.id).all()
+    snapshot_rows = (
+        db.query(AccountBalanceSnapshot)
+        .filter(AccountBalanceSnapshot.user_id == user.id)
+        .order_by(AccountBalanceSnapshot.account_id.asc(), AccountBalanceSnapshot.snapshot_at.asc())
+        .all()
+    )
+    snapshot_history: dict[str, list[AccountBalanceSnapshot]] = defaultdict(list)
+    for snapshot in snapshot_rows:
+        snapshot_history[snapshot.account_id].append(snapshot)
     snapshots = {
-        snapshot.account_id: snapshot
-        for snapshot in db.query(AccountBalanceSnapshot).filter(AccountBalanceSnapshot.user_id == user.id).all()
+        account_id: history[-1]
+        for account_id, history in snapshot_history.items()
     }
     transactions = (
         db.query(Transaction)
@@ -93,7 +106,128 @@ def fetch_user_context(db: Session, persona_id: str) -> UserContext:
     )
     recurring = db.query(RecurringCharge).filter(RecurringCharge.user_id == user.id).all()
     cards = db.query(CreditCardSummary).filter(CreditCardSummary.user_id == user.id).all()
-    return UserContext(user=user, accounts=accounts, snapshots=snapshots, transactions=transactions, recurring=recurring, cards=cards)
+    return UserContext(
+        user=user,
+        accounts=accounts,
+        snapshots=snapshots,
+        snapshot_history=snapshot_history,
+        transactions=transactions,
+        recurring=recurring,
+        cards=cards,
+    )
+
+
+def _month_points(months: int = 12) -> list[date]:
+    return [REFERENCE_DATE.replace(day=1) - relativedelta(months=offset) for offset in range(months - 1, -1, -1)]
+
+
+def _account_lookup(context: UserContext) -> dict[str, ConnectedAccount]:
+    return {account.id: account for account in context.accounts}
+
+
+def _balance_history_for_accounts(
+    context: UserContext,
+    account_ids: list[str],
+    *,
+    months: int = 12,
+    absolute: bool = False,
+) -> list[BalanceHistoryPoint]:
+    points: list[BalanceHistoryPoint] = []
+    month_points = _month_points(months)
+    history_maps = {
+        account_id: {
+            snapshot.snapshot_at.date().replace(day=1): snapshot
+            for snapshot in context.snapshot_history.get(account_id, [])
+        }
+        for account_id in account_ids
+    }
+
+    for month_start in month_points:
+        month_total = 0.0
+        for account_id in account_ids:
+            snapshot = history_maps.get(account_id, {}).get(month_start)
+            if snapshot is None:
+                continue
+            value = abs(snapshot.current_balance) if absolute else snapshot.current_balance
+            month_total += value
+        points.append(BalanceHistoryPoint(as_of=month_start, balance=round(month_total, 2)))
+    return points
+
+
+def _coerce_date(value: Any) -> date | None:
+    if value in {None, ""}:
+        return None
+    if isinstance(value, date):
+        return value
+    return date.fromisoformat(str(value))
+
+
+def _build_deferred_interest_offers(account: ConnectedAccount) -> list[DeferredInterestOfferSchema]:
+    offers: list[DeferredInterestOfferSchema] = []
+    raw_offers = (account.details_json or {}).get("deferred_interest_offers", [])
+    for raw in raw_offers:
+        expires_on = _coerce_date(raw.get("expires_on"))
+        if expires_on is None:
+            continue
+        started_on = _coerce_date(raw.get("started_on"))
+        remaining_amount = round(float(raw.get("remaining_deferred_amount", raw.get("deferred_amount", 0.0))), 2)
+        deferred_amount = round(float(raw.get("deferred_amount", remaining_amount)), 2)
+        days_remaining = (expires_on - REFERENCE_DATE).days
+        months_remaining = max(1, ceil(max(days_remaining, 0) / 30) or 1)
+        status = "expired" if days_remaining < 0 else "expiring_soon" if days_remaining <= 90 else "active"
+        offers.append(
+            DeferredInterestOfferSchema(
+                id=str(raw.get("id", normalize_merchant_key(account.display_name))),
+                label=str(raw.get("label", "Deferred interest financing")),
+                promo_type=str(raw.get("promo_type", "deferred_interest")),
+                started_on=started_on,
+                expires_on=expires_on,
+                deferred_amount=deferred_amount,
+                remaining_deferred_amount=remaining_amount,
+                estimated_deferred_interest_if_missed=raw.get("estimated_deferred_interest_if_missed"),
+                days_remaining=days_remaining,
+                required_monthly_payment_to_avoid_deferred_interest=round(remaining_amount / months_remaining, 2),
+                status=status,
+            )
+        )
+    offers.sort(key=lambda offer: offer.days_remaining)
+    return offers
+
+
+def _minimum_monthly_payment_to_avoid_deferred_interest(account: ConnectedAccount) -> float | None:
+    offers = [
+        offer.required_monthly_payment_to_avoid_deferred_interest
+        for offer in _build_deferred_interest_offers(account)
+        if offer.status != "expired"
+    ]
+    if not offers:
+        return None
+    return round(sum(offers), 2)
+
+
+def _active_deferred_interest_items(context: UserContext) -> list[dict[str, Any]]:
+    card_lookup = {card.account_id: card for card in context.cards}
+    items: list[dict[str, Any]] = []
+    for account in context.accounts:
+        if account.account_type != "credit":
+            continue
+        card = card_lookup.get(account.id)
+        if card is None:
+            continue
+        required_monthly_payment = _minimum_monthly_payment_to_avoid_deferred_interest(account)
+        for offer in _build_deferred_interest_offers(account):
+            if offer.status == "expired":
+                continue
+            items.append(
+                {
+                    "account": account,
+                    "card": card,
+                    "offer": offer,
+                    "required_monthly_payment": required_monthly_payment or offer.required_monthly_payment_to_avoid_deferred_interest,
+                }
+            )
+    items.sort(key=lambda item: (item["offer"].days_remaining, -item["offer"].remaining_deferred_amount))
+    return items
 
 
 def latest_balance_summary(context: UserContext) -> BalanceSummary:
@@ -127,6 +261,7 @@ def build_account_summaries(context: UserContext) -> list[AccountSummary]:
         snapshot = context.snapshots[account.id]
         card = card_lookup.get(account.id)
         interest_rollup = interest_rollups.get(account.id, {"this_month": 0.0, "last_six_months": 0.0})
+        deferred_interest_offers = _build_deferred_interest_offers(account) if card else []
         balance_value = abs(snapshot.current_balance) if account.account_type == "credit" else snapshot.current_balance
         items.append(
             AccountSummary(
@@ -142,9 +277,13 @@ def build_account_summaries(context: UserContext) -> list[AccountSummary]:
                 credit_limit=card.credit_limit if card else None,
                 minimum_payment=card.minimum_payment if card else None,
                 due_date=card.due_date if card else None,
+                statement_close_date=card.statement_close_date if card else None,
                 utilization_estimate=card.estimated_utilization if card else None,
                 interest_charged_this_month=interest_rollup["this_month"],
                 interest_charged_last_six_months=interest_rollup["last_six_months"],
+                minimum_monthly_payment_to_avoid_deferred_interest=_minimum_monthly_payment_to_avoid_deferred_interest(account) if card else None,
+                balance_history=_balance_history_for_accounts(context, [account.id], absolute=account.account_type == "credit"),
+                deferred_interest_offers=deferred_interest_offers,
             )
         )
     return items
@@ -251,10 +390,13 @@ def upsert_credit_summaries(db: Session, context: UserContext) -> list[CreditCar
         minimum_payment = card_seed.get("minimum_payment", 45.0)
         limit_value = card_seed.get("limit", abs(snapshot.current_balance) * 2)
         due_day = int(card_seed.get("due_day", 15))
+        statement_close_day = int(card_seed.get("statement_close_day", max(1, due_day - 5)))
         due_date = REFERENCE_DATE.replace(day=min(due_day, 28))
         if due_date < REFERENCE_DATE:
             due_date = due_date + relativedelta(months=1)
-        close_date = due_date - timedelta(days=5)
+        close_date = due_date.replace(day=min(statement_close_day, 28))
+        if close_date >= due_date:
+            close_date = close_date - relativedelta(months=1)
         utilization = abs(snapshot.current_balance) / limit_value if limit_value else 0.0
         summary = existing.get(account.id)
         payload = dict(
@@ -384,6 +526,112 @@ def compute_safe_to_spend(context: UserContext) -> SafeToSpendSnapshotSchema:
     )
 
 
+def _income_cadence_details(context: UserContext) -> tuple[int, float]:
+    income_txns = [transaction for transaction in context.transactions if transaction.is_income]
+    income_txns.sort(key=lambda item: item.posted_at, reverse=True)
+    if len(income_txns) < 2:
+        return (14, 0.0)
+    cadence_days = max(7, (income_txns[0].posted_at.date() - income_txns[1].posted_at.date()).days)
+    recent_amount = round(float(income_txns[0].amount), 2)
+    return cadence_days, recent_amount
+
+
+def _upcoming_cash_events(context: UserContext, *, horizon_days: int = 30) -> list[CashFlowEvent]:
+    events: list[CashFlowEvent] = []
+    account_lookup = _account_lookup(context)
+    horizon = REFERENCE_DATE + timedelta(days=horizon_days)
+    next_payday = compute_next_payday(context)
+    cadence_days, paycheck_amount = _income_cadence_details(context)
+
+    payday = next_payday
+    while paycheck_amount > 0 and payday <= horizon:
+        events.append(
+            CashFlowEvent(
+                date=payday,
+                kind="income",
+                label="Expected paycheck",
+                amount=paycheck_amount,
+                account_id=next((account.id for account in context.accounts if account.account_type == "checking"), None),
+            )
+        )
+        payday += timedelta(days=cadence_days)
+
+    essential_recurring = {"stonegatepropertymgmt", "psegnewarknj", "verizonwireless", "geicopayment"}
+    for charge in context.recurring:
+        next_expected = charge.next_expected_at.date()
+        if REFERENCE_DATE <= next_expected <= horizon:
+            kind = "bill" if charge.merchant_key in essential_recurring or charge.monthly_amount >= 60 else "subscription"
+            events.append(
+                CashFlowEvent(
+                    date=next_expected,
+                    kind=kind,
+                    label=charge.label,
+                    amount=round(charge.monthly_amount, 2),
+                    account_id=charge.account_id,
+                )
+            )
+
+    for card in context.cards:
+        if REFERENCE_DATE <= card.due_date <= horizon:
+            account = account_lookup.get(card.account_id)
+            label = f"{account.display_name if account else 'Credit card'} minimum due"
+            events.append(
+                CashFlowEvent(
+                    date=card.due_date,
+                    kind="debt_due",
+                    label=label,
+                    amount=round(card.minimum_payment, 2),
+                    account_id=card.account_id,
+                )
+            )
+
+    savings_transfers = [
+        transaction
+        for transaction in context.transactions
+        if transaction.is_transfer
+        and transaction.category_key == "savings"
+        and transaction.amount < 0
+        and transaction.posted_at.date() >= REFERENCE_DATE - timedelta(days=120)
+    ]
+    savings_transfers.sort(key=lambda item: item.posted_at)
+    if len(savings_transfers) >= 2:
+        latest_transfer = savings_transfers[-1]
+        next_transfer = latest_transfer.posted_at.date() + relativedelta(months=1)
+        while next_transfer < REFERENCE_DATE:
+            next_transfer += relativedelta(months=1)
+        while next_transfer <= horizon:
+            events.append(
+                CashFlowEvent(
+                    date=next_transfer,
+                    kind="savings_transfer",
+                    label="Planned transfer to savings",
+                    amount=round(abs(latest_transfer.amount), 2),
+                    account_id=latest_transfer.account_id,
+                )
+            )
+            next_transfer += relativedelta(months=1)
+
+    events.sort(key=lambda event: (event.date, event.kind, event.label))
+    return events
+
+
+def _projected_cash_low_point(context: UserContext, events: list[CashFlowEvent]) -> tuple[date, float]:
+    running_balance = latest_balance_summary(context).checking_balance
+    lowest_balance = running_balance
+    lowest_date = REFERENCE_DATE
+
+    for event in events:
+        if event.kind == "income":
+            running_balance += event.amount
+        else:
+            running_balance -= event.amount
+        if running_balance < lowest_balance:
+            lowest_balance = running_balance
+            lowest_date = event.date
+
+    return lowest_date, round(lowest_balance, 2)
+
+
 def compute_financial_health(context: UserContext, safe: SafeToSpendSnapshotSchema) -> FinancialHealthScoreSchema:
     monthly = monthly_totals(context)
     balances = latest_balance_summary(context)
@@ -497,6 +745,38 @@ def compute_risks(context: UserContext, safe: SafeToSpendSnapshotSchema) -> list
                 rationale="Leakage from interest or fees is recurring and should be addressed before it compounds further.",
                 affected_account_ids=[],
                 data={"monthly_leakage": monthly["leakage"]},
+                is_active=True,
+            )
+        )
+    for item in _active_deferred_interest_items(context):
+        offer = item["offer"]
+        if offer.days_remaining > 120:
+            continue
+        account = item["account"]
+        severity = "urgent" if offer.days_remaining <= 45 else "important"
+        risks.append(
+            RiskAlertSchema(
+                id=f"risk-{account.id}-{offer.id}-deferred-interest",
+                severity=severity,
+                category="deferred_interest",
+                title="A financing promo deadline is approaching",
+                summary=(
+                    f"{account.display_name} still has about ${offer.remaining_deferred_amount:.0f} tied to "
+                    f"{offer.label.lower()}, which expires on {offer.expires_on.strftime('%b %d')}."
+                ),
+                rationale=(
+                    "If the promotional balance is not cleared by the deadline, deferred interest can be charged "
+                    f"retroactively. Current pace suggests at least ${item['required_monthly_payment']:.0f} per "
+                    "month should be reserved for this balance."
+                ),
+                affected_account_ids=[account.id],
+                data={
+                    "expires_on": offer.expires_on.isoformat(),
+                    "days_remaining": offer.days_remaining,
+                    "remaining_deferred_amount": offer.remaining_deferred_amount,
+                    "required_monthly_payment": item["required_monthly_payment"],
+                    "estimated_deferred_interest_if_missed": offer.estimated_deferred_interest_if_missed,
+                },
                 is_active=True,
             )
         )
@@ -652,7 +932,18 @@ def compute_debt_strategies(context: UserContext, safe: SafeToSpendSnapshotSchem
     extra_capacity = max(0.0, min(safe.safe_to_spend_until_payday, latest_balance_summary(context).checking_balance - safe.risk_buffer))
     payment_pool = max(monthly_minimums, monthly_minimums + extra_capacity * 0.55)
     strategy_cards = [_simulate_strategy(context.cards, payment_pool, strategy) for strategy in DEBT_STRATEGIES]
-    if safe.spending_velocity_status == "likely_overspend":
+    deferred_items = _active_deferred_interest_items(context)
+    urgent_deferred_item = next((item for item in deferred_items if item["offer"].days_remaining <= 120), None)
+    if urgent_deferred_item is not None:
+        account = urgent_deferred_item["account"]
+        offer = urgent_deferred_item["offer"]
+        recommended = "avalanche"
+        rationale = (
+            f"{account.display_name} has promotional financing that expires on "
+            f"{offer.expires_on.strftime('%b %d, %Y')}. Clear that balance before the deadline so deferred "
+            "interest does not get added back."
+        )
+    elif safe.spending_velocity_status == "likely_overspend":
         recommended = "cash_preserving"
         rationale = "Cash protection matters most right now because your near-term buffer is under pressure."
     elif any(card.estimated_utilization >= 0.85 for card in context.cards):
@@ -809,6 +1100,49 @@ def compute_recommendations(
     categories = category_breakdown(context)
     recommendations: list[RecommendationSchema] = []
     created_at = datetime.combine(REFERENCE_DATE, datetime.min.time())
+    deferred_items = _active_deferred_interest_items(context)
+
+    urgent_deferred_item = next((item for item in deferred_items if item["offer"].days_remaining <= 120), None)
+    if urgent_deferred_item is not None:
+        account = urgent_deferred_item["account"]
+        offer = urgent_deferred_item["offer"]
+        required_payment = round(float(urgent_deferred_item["required_monthly_payment"]), 2)
+        backcharge = offer.estimated_deferred_interest_if_missed
+        impact_detail = (
+            f"Avoids a likely deferred-interest backcharge of about ${backcharge:.0f}."
+            if backcharge
+            else "Reduces the chance of deferred interest being added back."
+        )
+        recommendations.append(
+            RecommendationSchema(
+                id=f"rec-{context.user.persona_key}-{account.id}-deferred-interest",
+                title="Clear the promo balance before deferred interest kicks in",
+                summary=(
+                    f"{account.display_name} has a financing balance that expires on "
+                    f"{offer.expires_on.strftime('%b %d, %Y')}."
+                ),
+                rationale=(
+                    f"About ${offer.remaining_deferred_amount:.0f} remains on {offer.label.lower()}. "
+                    f"Paying at least ${required_payment:.0f} per month keeps you on pace to clear it before the deadline."
+                ),
+                impact_estimate=impact_detail,
+                urgency="urgent" if offer.days_remaining <= 45 else "important",
+                confidence=0.94,
+                category="debt_optimizer",
+                affected_accounts=[account.id],
+                suggested_action_amount=required_payment,
+                why_now=(
+                    f"There are {offer.days_remaining} days left before the promo ends, so the needed monthly "
+                    "payment is no longer optional."
+                ),
+                assumptions=[
+                    "The promotional balance and expiration date in the connected account are accurate.",
+                    "Minimum payments on all other cards remain covered first.",
+                ],
+                created_at=created_at,
+                priority_score=_recommendation_priority(98, 92, 95, 80, 96, boost=0.08),
+            )
+        )
 
     if safe.spending_velocity_status != "safe":
         recommendations.append(
@@ -831,7 +1165,7 @@ def compute_recommendations(
         )
     highest_strategy = next((item for item in debt.strategies if item.strategy == debt.recommended_strategy), None)
     top_target = recommended_debt_target(debt)
-    if highest_strategy and top_target:
+    if highest_strategy and top_target and top_target["account_id"] not in {item["account"].id for item in deferred_items if item["offer"].days_remaining <= 120}:
         recommendations.append(
             RecommendationSchema(
                 id=f"rec-{context.user.persona_key}-debt-target",
@@ -909,7 +1243,7 @@ def compute_recommendations(
                 affected_accounts=[],
                 suggested_action_amount=round(monthly["leakage"], 2),
                 why_now="Leakage repeats every cycle if payment order and buffer habits stay unchanged.",
-                assumptions=["Recent charges are representative of the current cycle.", "No promotional APR offsets are present."],
+                assumptions=["Recent charges are representative of the current cycle.", "Existing promo balances have not yet expired."],
                 created_at=created_at,
                 priority_score=_recommendation_priority(74, 78, 80, 70, 76, boost=0.02),
             )
@@ -943,9 +1277,16 @@ def build_cash_flow_response(context: UserContext, safe: SafeToSpendSnapshotSche
     monthly = monthly_totals(context)
     balances = latest_balance_summary(context)
     categories = category_breakdown(context)
+    cash_account_ids = [
+        account.id
+        for account in context.accounts
+        if account.account_type in {"checking", "savings"}
+    ]
+    ending_balance_series = _balance_history_for_accounts(context, cash_account_ids)
+    upcoming_events = _upcoming_cash_events(context)
+    low_point_date, low_point_balance = _projected_cash_low_point(context, upcoming_events)
     monthly_series = []
-    for offset in range(5, -1, -1):
-        month_start = REFERENCE_DATE.replace(day=1) - relativedelta(months=offset)
+    for month_start in _month_points(12):
         month_end = month_start + relativedelta(months=1)
         income = 0.0
         spend = 0.0
@@ -964,6 +1305,8 @@ def build_cash_flow_response(context: UserContext, safe: SafeToSpendSnapshotSche
             }
         )
     forecasted_balance = balances.checking_balance + monthly["monthly_income"] - monthly["monthly_spending"]
+    total_upcoming_obligations = round(sum(event.amount for event in upcoming_events if event.kind != "income"), 2)
+    total_expected_income = round(sum(event.amount for event in upcoming_events if event.kind == "income"), 2)
     return CashFlowResponse(
         monthly_income=monthly["monthly_income"],
         monthly_spending=monthly["monthly_spending"],
@@ -974,6 +1317,10 @@ def build_cash_flow_response(context: UserContext, safe: SafeToSpendSnapshotSche
         paycheck_to_paycheck_view={
             "next_payday": compute_next_payday(context).isoformat(),
             "cash_buffer_before_payday": round(safe.safe_to_spend_until_payday, 2),
+            "lowest_projected_balance_date": low_point_date.isoformat(),
+            "lowest_projected_balance": low_point_balance,
+            "total_upcoming_obligations": total_upcoming_obligations,
+            "total_expected_income": total_expected_income,
             "commentary": "This view separates committed obligations from flexible spending before the next paycheck.",
         },
         spending_velocity={
@@ -982,6 +1329,8 @@ def build_cash_flow_response(context: UserContext, safe: SafeToSpendSnapshotSche
             "projected_zero_date": safe.projected_zero_date.isoformat() if safe.projected_zero_date else None,
         },
         category_breakdown=categories,
+        ending_balance_series=ending_balance_series,
+        upcoming_events=upcoming_events,
         monthly_series=monthly_series,
     )
 
@@ -989,48 +1338,38 @@ def build_cash_flow_response(context: UserContext, safe: SafeToSpendSnapshotSche
 def build_credit_summary(context: UserContext) -> CreditSummaryResponse:
     total_limits = sum(card.credit_limit for card in context.cards) or 1.0
     utilization = sum(card.current_balance for card in context.cards) / total_limits
-    interest_rollups = _interest_charge_rollups_by_account(context)
+    deferred_items = _active_deferred_interest_items(context)
     if utilization >= 0.8:
         trend = "Under pressure"
     elif utilization >= 0.45:
         trend = "Manageable but elevated"
     else:
         trend = "Relatively stable"
-    cards = [
-        AccountSummary(
-            id=account.id,
-            display_name=account.display_name,
-            sanitized_name=account.sanitized_name,
-            institution_name=account.institution_name,
-            account_type=account.account_type,
-            subtype=account.subtype,
-            current_balance=round(abs(context.snapshots[account.id].current_balance), 2),
-            available_balance=round(abs(context.snapshots[account.id].available_balance), 2),
-            pending_balance=round(context.snapshots[account.id].pending_balance, 2),
-            credit_limit=card.credit_limit,
-            minimum_payment=card.minimum_payment,
-            due_date=card.due_date,
-            utilization_estimate=card.estimated_utilization,
-            interest_charged_this_month=interest_rollups.get(account.id, {}).get("this_month", 0.0),
-            interest_charged_last_six_months=interest_rollups.get(account.id, {}).get("last_six_months", 0.0),
-        )
-        for account in context.accounts
-        for card in context.cards
-        if card.account_id == account.id
-    ]
+    cards = [item for item in build_account_summaries(context) if item.account_type == "credit"]
     suggestions = []
+    urgent_deferred_item = next((item for item in deferred_items if item["offer"].days_remaining <= 120), None)
+    if urgent_deferred_item is not None:
+        offer = urgent_deferred_item["offer"]
+        account = urgent_deferred_item["account"]
+        suggestions.append(
+            f"{account.display_name} should get at least ${urgent_deferred_item['required_monthly_payment']:.0f} per month before {offer.expires_on.strftime('%b %d')} to avoid deferred interest."
+        )
     if utilization > 0.7:
         suggestions.append("A targeted payment before statement close would likely reduce utilization pressure fastest.")
     if any(card.minimum_payment > 0 and card.due_date <= REFERENCE_DATE + timedelta(days=7) for card in context.cards):
         suggestions.append("Keep minimums current first to protect payment stability.")
     if not suggestions:
         suggestions.append("Current utilization looks relatively controlled. Focus on keeping balances low before statement close.")
+    if urgent_deferred_item is not None:
+        payment_behavior = "A promo balance now needs deadline-aware payments in addition to keeping minimums current."
+    else:
+        payment_behavior = "Payments appear current in recent seeded history."
     return CreditSummaryResponse(
         current_score=context.user.credit_score,
         score_available=context.user.credit_score is not None,
         trend_label=trend,
         utilization_pressure=round(utilization, 4),
-        payment_behavior="Payments appear current in recent seeded history.",
+        payment_behavior=payment_behavior,
         actionable_suggestions=suggestions,
         cards=cards,
     )

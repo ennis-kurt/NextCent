@@ -41,6 +41,27 @@ def test_credit_summary_exposes_interest_rollups(client):
     assert data["cards"][0]["interest_charged_last_six_months"] >= data["cards"][0]["interest_charged_this_month"]
 
 
+def test_cash_flow_endpoint_exposes_twelve_month_history_and_upcoming_events(client):
+    response = client.get("/api/v1/cash-flow", params={"persona_id": "high-debt-strong-income"})
+    assert response.status_code == 200
+    data = response.json()
+    assert len(data["monthly_series"]) == 12
+    assert len(data["ending_balance_series"]) == 12
+    assert data["upcoming_events"]
+    assert "lowest_projected_balance" in data["paycheck_to_paycheck_view"]
+    assert any(event["kind"] == "income" for event in data["upcoming_events"])
+
+
+def test_credit_summary_exposes_deferred_interest_fields(client):
+    response = client.get("/api/v1/credit-summaries", params={"persona_id": "good-cash-poor-payment-allocation"})
+    assert response.status_code == 200
+    data = response.json()
+    promo_card = next(card for card in data["cards"] if card["deferred_interest_offers"])
+    assert promo_card["minimum_monthly_payment_to_avoid_deferred_interest"] > promo_card["minimum_payment"]
+    assert len(promo_card["balance_history"]) == 12
+    assert promo_card["deferred_interest_offers"][0]["required_monthly_payment_to_avoid_deferred_interest"] > 0
+
+
 def test_simulation_endpoint(client):
     response = client.post(
         "/api/v1/simulate",

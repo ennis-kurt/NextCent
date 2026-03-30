@@ -21,6 +21,33 @@ export interface BalanceSummary {
   savings_balance: number;
 }
 
+export interface BalanceHistoryPoint {
+  as_of: string;
+  balance: number;
+}
+
+export interface DeferredInterestOffer {
+  id: string;
+  label: string;
+  promo_type: "deferred_interest" | "intro_apr";
+  started_on: string | null;
+  expires_on: string;
+  deferred_amount: number;
+  remaining_deferred_amount: number;
+  estimated_deferred_interest_if_missed: number | null;
+  days_remaining: number;
+  required_monthly_payment_to_avoid_deferred_interest: number;
+  status: "active" | "expiring_soon" | "expired";
+}
+
+export interface CashFlowEvent {
+  date: string;
+  kind: "income" | "bill" | "subscription" | "debt_due" | "savings_transfer";
+  label: string;
+  amount: number;
+  account_id?: string | null;
+}
+
 export interface CategorySpend {
   category_key: string;
   label: string;
@@ -184,6 +211,8 @@ export interface CashFlowResponse {
   paycheck_to_paycheck_view: Record<string, string | number | null>;
   spending_velocity: Record<string, string | number | null>;
   category_breakdown: CategorySpend[];
+  ending_balance_series: BalanceHistoryPoint[];
+  upcoming_events: CashFlowEvent[];
   monthly_series: Array<{
     month: string;
     income: number;
@@ -212,9 +241,13 @@ export interface CreditSummaryResponse {
     credit_limit: number | null;
     minimum_payment: number | null;
     due_date: string | null;
+    statement_close_date: string | null;
     utilization_estimate: number | null;
     interest_charged_this_month: number;
     interest_charged_last_six_months: number;
+    minimum_monthly_payment_to_avoid_deferred_interest: number | null;
+    balance_history: BalanceHistoryPoint[];
+    deferred_interest_offers: DeferredInterestOffer[];
   }>;
 }
 

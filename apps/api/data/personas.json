@@ -27,7 +27,8 @@
         "balance": 9800,
         "apr": 24.99,
         "minimum_payment": 290,
-        "due_day": 8
+        "due_day": 8,
+        "statement_close_day": 3
       },
       {
         "name": "Amex Everyday",
@@ -36,7 +37,8 @@
         "balance": 3300,
         "apr": 19.9,
         "minimum_payment": 110,
-        "due_day": 21
+        "due_day": 21,
+        "statement_close_day": 16
       }
     ],
     "subscriptions": [
@@ -226,7 +228,8 @@
         "balance": 4100,
         "apr": 25.8,
         "minimum_payment": 120,
-        "due_day": 10
+        "due_day": 10,
+        "statement_close_day": 5
       },
       {
         "name": "Wells Fargo Active Cash",
@@ -235,7 +238,30 @@
         "balance": 4600,
         "apr": 18.7,
         "minimum_payment": 130,
-        "due_day": 24
+        "due_day": 24,
+        "statement_close_day": 19
+      },
+      {
+        "name": "CareCredit",
+        "last4": "3114",
+        "limit": 6500,
+        "balance": 2400,
+        "apr": 29.99,
+        "minimum_payment": 85,
+        "due_day": 20,
+        "statement_close_day": 15,
+        "deferred_interest_offers": [
+          {
+            "id": "promo-dental-2025",
+            "label": "Dental procedure financing",
+            "promo_type": "deferred_interest",
+            "started_on": "2025-08-14",
+            "expires_on": "2026-07-20",
+            "deferred_amount": 1800,
+            "remaining_deferred_amount": 1320,
+            "estimated_deferred_interest_if_missed": 286
+          }
+        ]
       }
     ],
     "subscriptions": [
@@ -272,7 +298,8 @@
         "balance": 1800,
         "apr": 19.2,
         "minimum_payment": 70,
-        "due_day": 18
+        "due_day": 18,
+        "statement_close_day": 13
       }
     ],
     "subscriptions": [
@@ -309,7 +336,8 @@
         "balance": 1020,
         "apr": 28.1,
         "minimum_payment": 40,
-        "due_day": 9
+        "due_day": 9,
+        "statement_close_day": 4
       }
     ],
     "subscriptions": [
@@ -346,7 +374,8 @@
         "balance": 2100,
         "apr": 20.9,
         "minimum_payment": 78,
-        "due_day": 14
+        "due_day": 14,
+        "statement_close_day": 9
       }
     ],
     "subscriptions": [
@@ -384,7 +413,8 @@
         "balance": 5400,
         "apr": 24.5,
         "minimum_payment": 165,
-        "due_day": 13
+        "due_day": 13,
+        "statement_close_day": 8
       },
       {
         "name": "Apple Card",
@@ -393,7 +423,8 @@
         "balance": 2950,
         "apr": 21.9,
         "minimum_payment": 95,
-        "due_day": 26
+        "due_day": 26,
+        "statement_close_day": 21
       }
     ],
     "subscriptions": [
