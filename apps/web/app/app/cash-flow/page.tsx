@@ -158,26 +158,32 @@ export default async function CashFlowPage({
           title="Upcoming money calendar"
           description="Expected pay, bills, debt dues, and planned savings moves in date order."
         >
-          <div className="space-y-3">
-            {events.map((event) => (
-              <div
-                key={event.id}
-                className="flex items-center justify-between gap-3 rounded-[20px] border border-[var(--pa-border)] bg-[var(--pa-surface)] px-4 py-4"
-              >
-                <div className="min-w-0">
-                  <div className="flex flex-wrap items-center gap-2">
-                    <StatusPill tone={event.tone === "default" ? "default" : event.tone}>{event.kindLabel}</StatusPill>
-                    <p className="text-sm text-[var(--pa-text-muted)]">{formatDate(event.date)}</p>
+          {events.length > 0 ? (
+            <div className="space-y-3">
+              {events.map((event) => (
+                <div
+                  key={event.id}
+                  className="flex items-center justify-between gap-3 rounded-[20px] border border-[var(--pa-border)] bg-[var(--pa-surface)] px-4 py-4"
+                >
+                  <div className="min-w-0">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <StatusPill tone={event.tone === "default" ? "default" : event.tone}>{event.kindLabel}</StatusPill>
+                      <p className="text-sm text-[var(--pa-text-muted)]">{formatDate(event.date)}</p>
+                    </div>
+                    <p className="mt-3 text-sm font-medium leading-6 text-[var(--pa-text)]">{titleCase(event.label)}</p>
                   </div>
-                  <p className="mt-3 text-sm font-medium leading-6 text-[var(--pa-text)]">{titleCase(event.label)}</p>
+                  <p className={`font-display text-[1.4rem] tabular-nums ${event.direction === "in" ? "text-[var(--pa-success)]" : "text-[var(--pa-text)]"}`}>
+                    {event.direction === "in" ? "+" : "-"}
+                    {formatCurrency(event.amount)}
+                  </p>
                 </div>
-                <p className={`font-display text-[1.4rem] tabular-nums ${event.direction === "in" ? "text-[var(--pa-success)]" : "text-[var(--pa-text)]"}`}>
-                  {event.direction === "in" ? "+" : "-"}
-                  {formatCurrency(event.amount)}
-                </p>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          ) : (
+            <div className="rounded-[22px] border border-dashed border-[var(--pa-border)] bg-[linear-gradient(180deg,rgba(255,255,255,0.72),rgba(247,239,226,0.6))] px-5 py-8 text-sm leading-7 text-[var(--pa-text-muted)]">
+              No scheduled paychecks, bills, or debt due dates are available for the next 30 days yet.
+            </div>
+          )}
         </SectionCard>
       </section>
 

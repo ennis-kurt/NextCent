@@ -19,7 +19,22 @@ import type {
 
 import type { DashboardResponseCompat } from "@/lib/investment";
 
-const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://127.0.0.1:8000/api/v1";
+function deriveBranchPreviewApiBase() {
+  const gitRef = process.env.NEXT_PUBLIC_VERCEL_GIT_COMMIT_REF;
+  const branchUrl = process.env.NEXT_PUBLIC_VERCEL_BRANCH_URL;
+
+  // Preview web deployments should talk to the matching API branch alias, not the shared production API.
+  if (!gitRef || gitRef === "main" || !branchUrl?.startsWith("web-git-")) {
+    return null;
+  }
+
+  return `https://${branchUrl.replace(/^web-git-/, "api-git-")}/api/v1`;
+}
+
+const API_BASE =
+  deriveBranchPreviewApiBase() ??
+  process.env.NEXT_PUBLIC_API_BASE_URL ??
+  "http://127.0.0.1:8000/api/v1";
 
 async function fetchJson<T>(path: string, init?: RequestInit): Promise<T> {
   const response = await fetch(`${API_BASE}${path}`, {

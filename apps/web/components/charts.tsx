@@ -30,7 +30,32 @@ function formatMonthTick(value: string) {
   return monthNames[monthIndex];
 }
 
+function ChartPlaceholder({
+  message,
+  minWidth = "420px",
+  heightClassName = "h-64 sm:h-72"
+}: {
+  message: string;
+  minWidth?: string;
+  heightClassName?: string;
+}) {
+  return (
+    <div className="w-full overflow-x-auto pb-2">
+      <div
+        className={`flex w-full items-center justify-center rounded-[22px] border border-dashed border-[var(--pa-border)] bg-[linear-gradient(180deg,rgba(255,255,255,0.7),rgba(247,239,226,0.6))] px-6 text-center text-sm leading-7 text-[var(--pa-text-muted)] ${heightClassName}`}
+        style={{ minWidth }}
+      >
+        <p className="max-w-sm">{message}</p>
+      </div>
+    </div>
+  );
+}
+
 export function SpendBreakdownChart({ data }: { data: CategorySpend[] }) {
+  if (data.length === 0) {
+    return <ChartPlaceholder message="Category totals will appear here once spending activity is available for this cycle." />;
+  }
+
   return (
     <div className="w-full overflow-x-auto pb-2" role="img" aria-label="Bar chart showing spending totals by category.">
       <div className="h-64 min-w-[420px] w-full sm:h-72 sm:min-w-0">
@@ -73,6 +98,10 @@ export function CashFlowTrendChart({
 }: {
   data: Array<{ month: string; income: number; spending: number; net: number }>;
 }) {
+  if (data.length === 0) {
+    return <ChartPlaceholder message="Monthly income and spending history will appear here once there is enough activity to compare." />;
+  }
+
   return (
     <div className="w-full overflow-x-auto pb-2" role="img" aria-label="Area chart comparing monthly income and spending trends.">
       <div className="h-64 min-w-[420px] w-full sm:h-72 sm:min-w-0">
@@ -125,6 +154,10 @@ export function BalanceHistoryChart({
   ariaLabel: string;
   color?: string;
 }) {
+  if (data.length === 0) {
+    return <ChartPlaceholder message="Month-end balance history is still being prepared for this profile." />;
+  }
+
   return (
     <div className="w-full overflow-x-auto pb-2" role="img" aria-label={ariaLabel}>
       <div className="h-64 min-w-[420px] w-full sm:h-72 sm:min-w-0">
@@ -171,6 +204,14 @@ export function MiniBalanceTrendChart({
   data: Array<{ as_of: string; balance: number }>;
   color?: string;
 }) {
+  if (data.length === 0) {
+    return (
+      <div className="flex h-20 w-full items-center justify-center rounded-[16px] border border-dashed border-[var(--pa-border)] bg-[linear-gradient(180deg,rgba(255,255,255,0.7),rgba(247,239,226,0.6))] px-4 text-center text-[11px] leading-5 text-[var(--pa-text-soft)]">
+        12-month balance history is still being prepared.
+      </div>
+    );
+  }
+
   return (
     <div className="h-20 w-full" role="img" aria-label="Compact 12-month balance trend.">
       <ResponsiveContainer width="100%" height="100%">
