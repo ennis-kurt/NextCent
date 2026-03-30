@@ -213,6 +213,8 @@ export interface CreditSummaryResponse {
     minimum_payment: number | null;
     due_date: string | null;
     utilization_estimate: number | null;
+    interest_charged_this_month: number;
+    interest_charged_last_six_months: number;
   }>;
 }
 

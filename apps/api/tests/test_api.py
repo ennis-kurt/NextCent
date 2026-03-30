@@ -31,6 +31,16 @@ def test_investment_guidance_endpoint(client):
     assert data["priority_destination"]
 
 
+def test_credit_summary_exposes_interest_rollups(client):
+    response = client.get("/api/v1/credit-summaries", params={"persona_id": "credit-score-pressure"})
+    assert response.status_code == 200
+    data = response.json()
+    assert data["cards"]
+    assert "interest_charged_this_month" in data["cards"][0]
+    assert "interest_charged_last_six_months" in data["cards"][0]
+    assert data["cards"][0]["interest_charged_last_six_months"] >= data["cards"][0]["interest_charged_this_month"]
+
+
 def test_simulation_endpoint(client):
     response = client.post(
         "/api/v1/simulate",

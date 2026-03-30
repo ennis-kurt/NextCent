@@ -121,10 +121,12 @@ def latest_balance_summary(context: UserContext) -> BalanceSummary:
 
 def build_account_summaries(context: UserContext) -> list[AccountSummary]:
     card_lookup = {card.account_id: card for card in context.cards}
+    interest_rollups = _interest_charge_rollups_by_account(context)
     items: list[AccountSummary] = []
     for account in context.accounts:
         snapshot = context.snapshots[account.id]
         card = card_lookup.get(account.id)
+        interest_rollup = interest_rollups.get(account.id, {"this_month": 0.0, "last_six_months": 0.0})
         balance_value = abs(snapshot.current_balance) if account.account_type == "credit" else snapshot.current_balance
         items.append(
             AccountSummary(
@@ -141,9 +143,38 @@ def build_account_summaries(context: UserContext) -> list[AccountSummary]:
                 minimum_payment=card.minimum_payment if card else None,
                 due_date=card.due_date if card else None,
                 utilization_estimate=card.estimated_utilization if card else None,
+                interest_charged_this_month=interest_rollup["this_month"],
+                interest_charged_last_six_months=interest_rollup["last_six_months"],
             )
         )
     return items
+
+
+def _interest_charge_rollups_by_account(context: UserContext) -> dict[str, dict[str, float]]:
+    current_month_start = datetime.combine(REFERENCE_DATE.replace(day=1), datetime.min.time())
+    six_month_window_start = datetime.combine(
+        (REFERENCE_DATE.replace(day=1) - relativedelta(months=5)),
+        datetime.min.time(),
+    )
+    rollups: dict[str, dict[str, float]] = defaultdict(lambda: {"this_month": 0.0, "last_six_months": 0.0})
+
+    for transaction in context.transactions:
+        if not transaction.is_interest_charge:
+            continue
+
+        amount = round(abs(transaction.amount), 2)
+        if transaction.posted_at >= six_month_window_start:
+            rollups[transaction.account_id]["last_six_months"] += amount
+        if transaction.posted_at >= current_month_start:
+            rollups[transaction.account_id]["this_month"] += amount
+
+    return {
+        account_id: {
+            "this_month": round(values["this_month"], 2),
+            "last_six_months": round(values["last_six_months"], 2),
+        }
+        for account_id, values in rollups.items()
+    }
 
 
 def monthly_totals(context: UserContext, days: int = 30) -> dict[str, float]:
@@ -958,6 +989,7 @@ def build_cash_flow_response(context: UserContext, safe: SafeToSpendSnapshotSche
 def build_credit_summary(context: UserContext) -> CreditSummaryResponse:
     total_limits = sum(card.credit_limit for card in context.cards) or 1.0
     utilization = sum(card.current_balance for card in context.cards) / total_limits
+    interest_rollups = _interest_charge_rollups_by_account(context)
     if utilization >= 0.8:
         trend = "Under pressure"
     elif utilization >= 0.45:
@@ -979,6 +1011,8 @@ def build_credit_summary(context: UserContext) -> CreditSummaryResponse:
             minimum_payment=card.minimum_payment,
             due_date=card.due_date,
             utilization_estimate=card.estimated_utilization,
+            interest_charged_this_month=interest_rollups.get(account.id, {}).get("this_month", 0.0),
+            interest_charged_last_six_months=interest_rollups.get(account.id, {}).get("last_six_months", 0.0),
         )
         for account in context.accounts
         for card in context.cards
@@ -1077,10 +1111,20 @@ def persist_pipeline(db: Session, persona_id: str) -> None:
     recommendations = compute_recommendations(context, safe, health, risks, debt, investment)
     review = build_monthly_review(context, health, safe)
     sanitization = SanitizationService(db)
+    recommendation_ids = [
+        recommendation_id
+        for (recommendation_id,) in db.query(Recommendation.id)
+        .filter(Recommendation.user_id == context.user.id)
+        .all()
+    ]
 
     db.query(FinancialHealthScore).filter(FinancialHealthScore.user_id == context.user.id).delete()
     db.query(RiskAlert).filter(RiskAlert.user_id == context.user.id).delete()
-    db.query(RecommendationHistory).filter(RecommendationHistory.user_id == context.user.id).delete()
+    if recommendation_ids:
+        db.query(RecommendationHistory).filter(RecommendationHistory.recommendation_id.in_(recommendation_ids)).delete(
+            synchronize_session=False
+        )
+    db.query(RecommendationHistory).filter(RecommendationHistory.user_id == context.user.id).delete(synchronize_session=False)
     db.query(Recommendation).filter(Recommendation.user_id == context.user.id).delete()
     db.query(SafeToSpendSnapshot).filter(SafeToSpendSnapshot.user_id == context.user.id).delete()
     db.query(DebtStrategyRun).filter(DebtStrategyRun.user_id == context.user.id).delete()

@@ -7,10 +7,8 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from .config import settings
 from .database import Base, SessionLocal, engine
-from .models import User
 from .routers.api import router
 from .seed_data import ensure_seed_data
-from .services.finance import persist_pipeline
 
 
 def initialize_database() -> None:
@@ -18,9 +16,6 @@ def initialize_database() -> None:
     db = SessionLocal()
     try:
         ensure_seed_data(db)
-        personas = [user.persona_key for user in db.query(User).all()]
-        for persona_id in personas:
-            persist_pipeline(db, persona_id)
     finally:
         db.close()
 

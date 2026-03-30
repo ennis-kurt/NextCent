@@ -61,7 +61,7 @@ export default async function CreditHealthPage({
         <div className="space-y-4">
           {credit.cards.map((card) => (
             <div key={card.id} className="rounded-[24px] border border-[var(--pa-border)] bg-[var(--pa-surface)] p-5">
-              <div className="grid gap-4 xl:grid-cols-6">
+              <div className="grid gap-4 xl:grid-cols-8">
                 <div className="rounded-[24px] border border-[var(--pa-border)] bg-white/82 p-5 xl:col-span-2">
                   <p className="text-xs uppercase tracking-[0.16em] text-[var(--pa-text-soft)]">{card.sanitized_name}</p>
                   <h3 className="mt-2 font-display text-xl text-[var(--pa-text)]">{card.display_name}</h3>
@@ -73,6 +73,16 @@ export default async function CreditHealthPage({
                 <MetricCard label="Limit" value={formatCurrency(card.credit_limit ?? 0)} />
                 <MetricCard label="Utilization" value={formatPercent(card.utilization_estimate ?? 0)} tone={(card.utilization_estimate ?? 0) > 0.75 ? "warning" : "success"} />
                 <MetricCard label="Minimum due" value={formatCurrency(card.minimum_payment ?? 0)} tone={(card.minimum_payment ?? 0) > 0 ? "primary" : "default"} />
+                <MetricCard
+                  label="Interest this month"
+                  value={formatCurrency(card.interest_charged_this_month)}
+                  tone={card.interest_charged_this_month > 0 ? "warning" : "default"}
+                />
+                <MetricCard
+                  label="Interest, 6 months"
+                  value={formatCurrency(card.interest_charged_last_six_months)}
+                  tone={card.interest_charged_last_six_months > 0 ? "warning" : "default"}
+                />
               </div>
             </div>
           ))}

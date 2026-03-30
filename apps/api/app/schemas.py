@@ -70,6 +70,8 @@ class AccountSummary(ORMModel):
     minimum_payment: float | None = None
     due_date: date | None = None
     utilization_estimate: float | None = None
+    interest_charged_this_month: float = 0.0
+    interest_charged_last_six_months: float = 0.0
 
 
 class BalanceSummary(BaseModel):

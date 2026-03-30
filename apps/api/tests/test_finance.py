@@ -7,6 +7,7 @@ from app.services.finance import (
     compute_investment_guidance,
     compute_safe_to_spend,
     fetch_user_context,
+    persist_pipeline,
 )
 from app.services.sanitization import BLOCKED_FIELDS, SanitizationService
 
@@ -73,5 +74,14 @@ def test_investment_guidance_allows_investing_for_healthy_persona():
         investment = compute_investment_guidance(context, safe, debt)
         assert investment.posture == "invest_now"
         assert investment.recommended_investment_amount > 0
+    finally:
+        db.close()
+
+
+def test_persist_pipeline_can_run_twice_for_same_persona():
+    db = SessionLocal()
+    try:
+        persist_pipeline(db, "credit-score-pressure")
+        persist_pipeline(db, "credit-score-pressure")
     finally:
         db.close()

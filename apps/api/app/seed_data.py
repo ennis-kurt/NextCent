@@ -449,7 +449,7 @@ def seed_users(db: Session) -> None:
             elif "healthy" in scenario["flags"]:
                 extra_payment = 150.0
 
-            for month_idx in range(4):
+            for month_idx in range(6):
                 month_base = (REFERENCE_DATE.replace(day=1) - relativedelta(months=month_idx))
                 due_day = _month_day(month_base, card["due_day"])
                 payment_amount = -(card["minimum_payment"] + extra_payment / max(1, len(scenario["credit_cards"])))
