@@ -21,7 +21,7 @@ export function ExpandableNote({
   return (
     <details
       className={cn(
-        "group overflow-hidden rounded-[22px] border transition-[border-color,background-color,box-shadow] duration-200",
+        "group overflow-hidden rounded-[20px] border transition-[border-color,background-color,box-shadow] duration-200 md:rounded-[22px]",
         inverted
           ? "border-white/10 bg-[linear-gradient(180deg,rgba(255,255,255,0.04),rgba(255,255,255,0.02))] group-open:border-white/16 group-open:bg-[linear-gradient(180deg,rgba(255,255,255,0.08),rgba(255,255,255,0.03))]"
           : "border-[var(--pa-border)] bg-[linear-gradient(180deg,rgba(255,255,255,0.9),rgba(247,239,226,0.82))] shadow-[var(--pa-shadow-sm)] group-open:border-[rgba(31,116,104,0.18)] group-open:shadow-[0_14px_26px_rgba(8,15,22,0.06)]",
@@ -30,7 +30,7 @@ export function ExpandableNote({
     >
       <summary
         className={cn(
-          "flex cursor-pointer list-none items-start justify-between gap-4 px-4 py-3.5 text-left transition-[color,background-color] duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--pa-primary)] focus-visible:ring-inset [&::-webkit-details-marker]:hidden",
+          "flex cursor-pointer list-none items-start justify-between gap-3 px-3.5 py-3 text-left transition-[color,background-color] duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--pa-primary)] focus-visible:ring-inset md:gap-4 md:px-4 md:py-3.5 [&::-webkit-details-marker]:hidden",
           inverted
             ? "text-white/78 hover:bg-white/[0.04]"
             : "text-[var(--pa-text-muted)] hover:bg-white/55"
@@ -64,7 +64,7 @@ export function ExpandableNote({
         </div>
         <span
           className={cn(
-            "inline-flex shrink-0 items-center gap-1 rounded-full px-2.5 py-1 text-[10px] font-medium uppercase tracking-[0.18em]",
+            "inline-flex shrink-0 items-center gap-1 rounded-full px-2 py-1 text-[10px] font-medium uppercase tracking-[0.16em] md:px-2.5 md:tracking-[0.18em]",
             inverted ? "bg-white/8 text-white/58" : "bg-white text-[var(--pa-text-soft)]"
           )}
         >
@@ -76,10 +76,10 @@ export function ExpandableNote({
           />
         </span>
       </summary>
-      <div className="px-4 pb-4">
+      <div className="px-3.5 pb-3.5 md:px-4 md:pb-4">
         <div
           className={cn(
-            "rounded-[18px] border px-4 py-3 text-sm leading-6",
+            "rounded-[18px] border px-3.5 py-3 text-sm leading-6 md:px-4",
             inverted
               ? "border-white/8 bg-black/10 text-white/62"
               : "border-[rgba(15,23,32,0.08)] bg-white/72 text-[var(--pa-text-muted)]"

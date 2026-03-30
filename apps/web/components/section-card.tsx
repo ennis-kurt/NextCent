@@ -24,17 +24,17 @@ export function SectionCard({
   return (
     <section
       className={cn(
-        "relative overflow-hidden rounded-[30px] border border-[var(--pa-border)] bg-[linear-gradient(180deg,rgba(255,255,255,0.92),rgba(247,239,226,0.92))] p-6 shadow-[var(--pa-shadow-md)]",
+        "relative overflow-hidden rounded-[26px] border border-[var(--pa-border)] bg-[linear-gradient(180deg,rgba(255,255,255,0.92),rgba(247,239,226,0.92))] p-5 shadow-[var(--pa-shadow-md)] md:rounded-[30px] md:p-6",
         className
       )}
     >
       <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-[linear-gradient(90deg,transparent,rgba(183,139,66,0.7),transparent)]" />
-      <div className="mb-6 flex flex-col gap-2">
+      <div className="mb-5 flex flex-col gap-2 md:mb-6">
         {eyebrow ? (
           <p className="text-[11px] font-medium uppercase tracking-[0.24em] text-[var(--pa-text-soft)]">{eyebrow}</p>
         ) : null}
         <div className="flex flex-col gap-1">
-          <h2 className="text-balance font-display text-[1.35rem] font-semibold text-[var(--pa-text)]">{title}</h2>
+          <h2 className="text-balance font-display text-[1.2rem] font-semibold text-[var(--pa-text)] md:text-[1.35rem]">{title}</h2>
           {description && descriptionDetail ? (
             <ExpandableNote
               className="max-w-2xl"

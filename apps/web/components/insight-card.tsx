@@ -26,11 +26,11 @@ export function InsightCard({
       : `Expected impact depends on the next account refresh and payment timing.`;
 
   return (
-    <div className="rounded-[24px] border border-[var(--pa-border)] bg-[var(--pa-surface)] p-5 transition-[transform,box-shadow,border-color] duration-200 hover:-translate-y-0.5 hover:border-[rgba(15,23,32,0.16)] hover:shadow-[0_18px_30px_rgba(8,15,22,0.08)]">
+    <div className="rounded-[22px] border border-[var(--pa-border)] bg-[var(--pa-surface)] p-4 transition-[transform,box-shadow,border-color] duration-200 hover:-translate-y-0.5 hover:border-[rgba(15,23,32,0.16)] hover:shadow-[0_18px_30px_rgba(8,15,22,0.08)] md:rounded-[24px] md:p-5">
       <div className="mb-4 flex items-start justify-between gap-3">
         <div>
           <p className="text-sm text-[var(--pa-text-soft)]">{variant === "recommendation" ? "Next Best Action" : "Risk Signal"}</p>
-          <h3 className="mt-2 font-display text-lg font-semibold text-[var(--pa-text)]">{item.title}</h3>
+          <h3 className="mt-2 font-display text-[1.05rem] font-semibold leading-7 text-[var(--pa-text)] md:text-lg">{item.title}</h3>
         </div>
         <StatusPill tone={urgency === "urgent" ? "urgent" : urgency === "important" ? "important" : "safe"}>
           {urgency}

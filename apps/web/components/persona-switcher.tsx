@@ -8,21 +8,27 @@ import { cn } from "@/lib/utils";
 
 export function PersonaSwitcher({
   personas,
-  personaId
+  personaId,
+  variant = "default",
+  showDescription = true
 }: {
   personas: PersonaSummary[];
   personaId: string;
+  variant?: "default" | "compact";
+  showDescription?: boolean;
 }) {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const [isPending, startTransition] = useTransition();
   const selectId = useId();
+  const compact = variant === "compact";
 
   return (
     <label
       className={cn(
-        "grid min-w-[280px] gap-2 rounded-[26px] border bg-white/80 px-4 py-4 text-sm text-[var(--pa-text-muted)] shadow-[var(--pa-shadow-sm)] backdrop-blur transition-[border-color,box-shadow,transform] duration-200",
+        "grid gap-2 border bg-white/80 text-sm text-[var(--pa-text-muted)] shadow-[var(--pa-shadow-sm)] backdrop-blur transition-[border-color,box-shadow,transform] duration-200",
+        compact ? "min-w-0 rounded-[22px] px-3.5 py-3" : "min-w-[280px] rounded-[26px] px-4 py-4",
         isPending
           ? "border-[rgba(31,116,104,0.24)] shadow-[0_16px_30px_rgba(31,116,104,0.14)]"
           : "border-white/65 hover:-translate-y-0.5 hover:shadow-[0_18px_32px_rgba(8,15,22,0.08)]"
@@ -46,7 +52,8 @@ export function PersonaSwitcher({
         name="persona"
         aria-busy={isPending}
         className={cn(
-          "min-w-0 rounded-2xl border border-[var(--pa-border)] bg-[var(--pa-surface)] px-4 py-3 font-semibold text-[var(--pa-text)] transition-[border-color,box-shadow,background-color] duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--pa-primary)] focus-visible:ring-offset-2 focus-visible:ring-offset-white",
+          "min-w-0 rounded-2xl border border-[var(--pa-border)] bg-[var(--pa-surface)] font-semibold text-[var(--pa-text)] transition-[border-color,box-shadow,background-color] duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--pa-primary)] focus-visible:ring-offset-2 focus-visible:ring-offset-white",
+          compact ? "px-3 py-2.5 text-[0.95rem]" : "px-4 py-3",
           isPending && "bg-white"
         )}
         disabled={isPending}
@@ -65,9 +72,11 @@ export function PersonaSwitcher({
           </option>
         ))}
       </select>
-      <span className="text-xs text-[var(--pa-text-soft)]">
-        {isPending ? "Refreshing guidance for the selected seeded profile…" : "Compare guidance across seeded profiles."}
-      </span>
+      {showDescription ? (
+        <span className="text-xs text-[var(--pa-text-soft)]">
+          {isPending ? "Refreshing guidance for the selected seeded profile…" : "Compare guidance across seeded profiles."}
+        </span>
+      ) : null}
       <span className="sr-only" aria-live="polite">
         {isPending ? "Switching scenario…" : ""}
       </span>

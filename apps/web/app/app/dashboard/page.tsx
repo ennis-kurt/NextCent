@@ -42,7 +42,7 @@ export default async function DashboardPage({
         safeToSpendThisWeek={dashboard.safe_to_spend.safe_to_spend_this_week}
       />
 
-      <section className="grid gap-4 xl:grid-cols-4">
+      <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <MetricCard
           label="Total cash"
           value={formatCurrency(dashboard.balance_summary.total_cash)}
@@ -73,21 +73,21 @@ export default async function DashboardPage({
         />
       </section>
 
-      <section className="grid gap-6 xl:grid-cols-[1.2fr_0.8fr]">
+      <section className="grid gap-5 xl:grid-cols-[1.2fr_0.8fr] xl:gap-6">
         <SectionCard
           eyebrow="Safe To Spend"
           title="Current runway"
           description="Updates with bills, debt minimums, and recent pace."
           descriptionDetail="This is not a fixed budget cap. The number moves with upcoming obligations, pending debits, and how fast discretionary spending is tracking."
         >
-          <div className="grid gap-4 md:grid-cols-3">
+          <div className="grid gap-3 sm:grid-cols-3 md:gap-4">
             <MetricCard label="Today" value={formatCurrency(dashboard.safe_to_spend.safe_to_spend_today)} tone="primary" />
             <MetricCard label="This week" value={formatCurrency(dashboard.safe_to_spend.safe_to_spend_this_week)} tone="primary" />
             <MetricCard label="Until payday" value={formatCurrency(dashboard.safe_to_spend.safe_to_spend_until_payday)} tone="primary" />
           </div>
           <div className="mt-5 rounded-[24px] border border-[var(--pa-border)] bg-[var(--pa-surface)] p-5">
             <p className="text-sm leading-7 text-[var(--pa-text-muted)]">{dashboard.safe_to_spend.guidance_summary}</p>
-            <div className="mt-4 flex flex-wrap gap-4 text-sm text-[var(--pa-text-muted)]">
+            <div className="mt-4 flex flex-wrap gap-3 text-sm text-[var(--pa-text-muted)]">
               <span>Projected depletion: {formatDate(dashboard.safe_to_spend.projected_zero_date)}</span>
               <span>Risk buffer: {formatCurrency(dashboard.safe_to_spend.risk_buffer)}</span>
               <span>Savings floor: {formatCurrency(dashboard.safe_to_spend.savings_floor)}</span>
@@ -158,7 +158,7 @@ export default async function DashboardPage({
         </SectionCard>
       </section>
 
-      <section className="grid gap-6 xl:grid-cols-[0.9fr_1.1fr]">
+      <section className="grid gap-5 xl:grid-cols-[0.9fr_1.1fr] xl:gap-6">
         <SectionCard
           eyebrow="Spending Trend"
           title="Where the month is going"
@@ -173,7 +173,7 @@ export default async function DashboardPage({
           description="Fast sources of cash-flow relief."
           descriptionDetail="Recurring charges, fees, and revolving interest are often the quickest ways to recover near-term flexibility."
         >
-          <div className="grid gap-4 md:grid-cols-2">
+          <div className="grid gap-4 sm:grid-cols-2">
             <MetricCard
               label="Subscriptions"
               value={formatCurrency(dashboard.subscriptions_total)}
@@ -211,7 +211,7 @@ export default async function DashboardPage({
                 <ArrowDownCircle aria-hidden="true" className="h-5 w-5" />
               </div>
             </div>
-            <div className="mt-5 grid gap-3 md:grid-cols-2">
+            <div className="mt-5 grid gap-3 sm:grid-cols-2">
               <MetricCard
                 label="Suggested payment"
                 value={formatCurrency(Number(debtTarget?.suggested_payment ?? 0))}
@@ -245,7 +245,7 @@ export default async function DashboardPage({
                 )}
               </div>
             </div>
-            <div className="mt-5 grid gap-3 md:grid-cols-2">
+            <div className="mt-5 grid gap-3 sm:grid-cols-2">
               <MetricCard
                 label="Invest now"
                 value={formatCurrency(investment.recommended_investment_amount)}
@@ -269,7 +269,7 @@ export default async function DashboardPage({
         </div>
       </SectionCard>
 
-      <section className="grid gap-6 xl:grid-cols-2">
+      <section className="grid gap-5 xl:grid-cols-2 xl:gap-6">
         <SectionCard eyebrow="Top 3 Actions" title="Recommended next moves">
           <div className="space-y-4">
             {dashboard.top_recommendations.map((recommendation) => (

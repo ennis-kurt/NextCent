@@ -17,7 +17,7 @@ export default async function DebtOptimizerPage({
 
   return (
     <PageFrame pathname="/app/debt-optimizer" personaId={personaId} personas={personas}>
-      <section className="grid gap-4 xl:grid-cols-3">
+      <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
         <MetricCard label="Recommended strategy" value={debt.recommended_strategy.replaceAll("_", " ")} tone="primary" detail={debt.rationale} />
         <MetricCard label="Utilization pressure" value={formatPercent(credit.utilization_pressure)} tone={credit.utilization_pressure > 0.7 ? "warning" : "success"} />
         <MetricCard label="Credit trend" value={credit.trend_label} detail={credit.payment_behavior} />
@@ -37,7 +37,7 @@ export default async function DebtOptimizerPage({
                   <p className="mt-2 font-display text-2xl text-[var(--pa-text)]">{formatCurrency(card.current_balance)}</p>
                 </div>
               </div>
-              <div className="mt-5 grid gap-3 md:grid-cols-3">
+              <div className="mt-5 grid gap-3 sm:grid-cols-3">
                 <MetricCard label="Minimum" value={formatCurrency(card.minimum_payment ?? 0)} />
                 <MetricCard label="Limit" value={formatCurrency(card.credit_limit ?? 0)} />
                 <MetricCard label="Utilization" value={formatPercent(card.utilization_estimate ?? 0)} />

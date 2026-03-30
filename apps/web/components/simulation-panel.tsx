@@ -60,7 +60,7 @@ export function SimulationPanel({
       description="Test a change, compare deltas, and reopen saved runs."
       descriptionDetail="Each run compares the current state against a proposed move and saves the latest output back into persona history."
     >
-      <div className="grid gap-6 lg:grid-cols-[360px_minmax(0,1fr)]">
+      <div className="grid gap-5 lg:grid-cols-[360px_minmax(0,1fr)] lg:gap-6">
         <form
           className="rounded-[24px] border border-[var(--pa-border)] bg-[var(--pa-surface)] p-5"
           onSubmit={(event) => {
@@ -159,7 +159,7 @@ export function SimulationPanel({
                   </div>
                   <StatusPill tone={comfortTone(result.comfort_level)}>{result.comfort_level}</StatusPill>
                 </div>
-                <div className="grid gap-4 md:grid-cols-3">
+                <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
                   {Object.entries(result.deltas).map(([key, value]) => (
                     <div key={key} className="rounded-2xl border border-[var(--pa-border)] bg-[var(--pa-surface)] p-4">
                       <p className="text-xs uppercase tracking-[0.18em] text-[var(--pa-text-soft)]">{titleCase(key)}</p>
@@ -167,7 +167,7 @@ export function SimulationPanel({
                     </div>
                   ))}
                 </div>
-                <div className="grid gap-4 md:grid-cols-2">
+                <div className="grid gap-4 sm:grid-cols-2">
                   <div className="rounded-2xl border border-[var(--pa-border)] bg-[var(--pa-surface)] p-4">
                     <p className="text-xs uppercase tracking-[0.22em] text-[var(--pa-text-soft)]">Facts</p>
                     <ul className="mt-3 space-y-2 text-sm text-[var(--pa-text-muted)]">

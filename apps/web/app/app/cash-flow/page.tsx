@@ -24,13 +24,13 @@ export default async function CashFlowPage({
 
   return (
     <PageFrame pathname="/app/cash-flow" personaId={personaId} personas={personas}>
-      <section className="grid gap-4 xl:grid-cols-4">
+      <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <MetricCard label="Monthly income" value={formatCurrency(cashFlow.monthly_income)} tone="success" />
         <MetricCard label="Monthly spending" value={formatCurrency(cashFlow.monthly_spending)} tone="warning" />
         <MetricCard label="Fixed expenses" value={formatCurrency(cashFlow.monthly_fixed_expenses)} />
         <MetricCard label="Forecasted month-end balance" value={formatCurrency(cashFlow.forecasted_month_end_balance)} tone="primary" />
       </section>
-      <section className="grid gap-6 xl:grid-cols-[1.2fr_0.8fr]">
+      <section className="grid gap-5 xl:grid-cols-[1.2fr_0.8fr] xl:gap-6">
         <SectionCard eyebrow="Trend" title="Income vs spending over time" description="The goal is to make month-end direction obvious at a glance.">
           <CashFlowTrendChart data={cashFlow.monthly_series} />
         </SectionCard>
@@ -84,7 +84,7 @@ export default async function CashFlowPage({
         </SectionCard>
       </section>
       <SectionCard eyebrow="Categories" title="Category spend breakdown" description="Current category totals with baseline drift where available.">
-        <div className="grid gap-6 xl:grid-cols-[1fr_1fr]">
+        <div className="grid gap-5 xl:grid-cols-[1fr_1fr] xl:gap-6">
           <SpendBreakdownChart data={cashFlow.category_breakdown} />
           <div className="space-y-3">
             {cashFlow.category_breakdown.map((item) => (

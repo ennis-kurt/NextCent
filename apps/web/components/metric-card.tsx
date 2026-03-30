@@ -50,7 +50,7 @@ export function MetricCard({
   return (
     <div
       className={cn(
-        "relative overflow-hidden rounded-[28px] border border-[var(--pa-border)] p-5 shadow-[var(--pa-shadow-sm)] transition-[transform,box-shadow,border-color] duration-200 hover:-translate-y-0.5 hover:border-[rgba(15,23,32,0.16)] hover:shadow-[0_18px_30px_rgba(8,15,22,0.08)]",
+        "relative overflow-hidden rounded-[24px] border border-[var(--pa-border)] p-4 shadow-[var(--pa-shadow-sm)] transition-[transform,box-shadow,border-color] duration-200 hover:-translate-y-0.5 hover:border-[rgba(15,23,32,0.16)] hover:shadow-[0_18px_30px_rgba(8,15,22,0.08)] md:rounded-[28px] md:p-5",
         className,
         tones[tone].surface
       )}
@@ -59,11 +59,15 @@ export function MetricCard({
       <div className="mb-4 flex items-start justify-between gap-3">
         <div>
           <p className="text-sm text-[var(--pa-text-muted)]">{label}</p>
-          <p className="mt-2 font-display text-3xl font-semibold tabular-nums text-[var(--pa-text)]">{value}</p>
+          <p className="mt-2 font-display text-[2rem] font-semibold leading-none tabular-nums text-[var(--pa-text)] md:text-3xl">{value}</p>
         </div>
-        {icon ? <div className={cn("rounded-2xl p-3 text-[var(--pa-text)] shadow-[var(--pa-shadow-sm)]", tones[tone].icon)}>{icon}</div> : null}
+        {icon ? (
+          <div className={cn("rounded-2xl p-2.5 text-[var(--pa-text)] shadow-[var(--pa-shadow-sm)] md:p-3", tones[tone].icon)}>
+            {icon}
+          </div>
+        ) : null}
       </div>
-      {detail ? <p className="max-w-[26rem] text-sm leading-6 text-[var(--pa-text-muted)]">{detail}</p> : null}
+      {detail ? <p className="max-w-[26rem] text-sm leading-6 text-[var(--pa-text-muted)] md:text-[0.95rem]">{detail}</p> : null}
       {change ? <p className="mt-2 font-medium text-[var(--pa-text)]">{change}</p> : null}
     </div>
   );

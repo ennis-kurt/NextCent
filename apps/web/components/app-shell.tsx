@@ -7,6 +7,7 @@ import { cn } from "@/lib/utils";
 
 import { ExpandableNote } from "./expandable-note";
 import { Logo } from "./logo";
+import { MobileShellChrome } from "./mobile-shell-chrome";
 import { PersonaSwitcher } from "./persona-switcher";
 
 const SHELL_COPY: Record<string, { summary: string; detail: string }> = {
@@ -79,8 +80,9 @@ export function AppShell({
 
   return (
     <div className="min-h-screen bg-[radial-gradient(circle_at_top_left,rgba(31,116,104,0.08),transparent_28%),radial-gradient(circle_at_top_right,rgba(183,139,66,0.08),transparent_22%),transparent]">
-      <div className="mx-auto grid min-h-screen max-w-[1560px] gap-6 px-4 py-4 lg:grid-cols-[300px_minmax(0,1fr)] lg:px-6">
-        <aside className="flex flex-col overflow-hidden rounded-[34px] border border-white/8 bg-[linear-gradient(180deg,rgba(21,34,45,0.97),rgba(15,23,32,0.99))] p-6 text-white shadow-[0_32px_80px_rgba(9,16,24,0.34)] lg:self-start">
+      <MobileShellChrome pathname={pathname} personaId={personaId} personas={personas} />
+      <div className="mx-auto grid min-h-screen max-w-[1560px] gap-5 px-4 pb-4 lg:grid-cols-[300px_minmax(0,1fr)] lg:gap-6 lg:px-6 lg:py-4">
+        <aside className="hidden flex-col overflow-hidden rounded-[34px] border border-white/8 bg-[linear-gradient(180deg,rgba(21,34,45,0.97),rgba(15,23,32,0.99))] p-6 text-white shadow-[0_32px_80px_rgba(9,16,24,0.34)] lg:flex lg:self-start">
           <Logo tone="inverted" showTagline={false} />
           <div className="mt-6 inline-flex w-fit rounded-full border border-white/10 bg-white/6 px-3 py-1.5 text-[11px] uppercase tracking-[0.2em] text-white/62">
             Seeded demo data
@@ -117,14 +119,14 @@ export function AppShell({
             </div>
           </div>
         </aside>
-        <main id="main-content" className="space-y-8 pb-12">
-          <header className="relative overflow-hidden rounded-[34px] border border-white/55 bg-[linear-gradient(135deg,rgba(255,255,255,0.88),rgba(245,236,223,0.94))] px-6 py-6 shadow-[var(--pa-shadow-lg)] backdrop-blur md:px-8">
+        <main id="main-content" className="space-y-6 pb-[calc(6.75rem+env(safe-area-inset-bottom))] lg:space-y-8 lg:pb-12">
+          <header className="relative overflow-hidden rounded-[28px] border border-white/55 bg-[linear-gradient(135deg,rgba(255,255,255,0.88),rgba(245,236,223,0.94))] px-5 py-5 shadow-[var(--pa-shadow-lg)] backdrop-blur sm:px-6 md:rounded-[34px] md:px-8 md:py-6">
             <div className="absolute -right-10 -top-14 h-44 w-44 rounded-full bg-[rgba(31,116,104,0.14)] blur-3xl" />
             <div className="absolute bottom-0 left-0 h-20 w-full bg-[linear-gradient(90deg,rgba(31,116,104,0.12),rgba(183,139,66,0.14),transparent)]" />
-            <div className="relative flex flex-col gap-5 xl:flex-row xl:items-end xl:justify-between">
+            <div className="relative flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
               <div className="max-w-2xl">
                 <p className="text-[11px] uppercase tracking-[0.24em] text-[var(--pa-text-soft)]">Seeded workspace</p>
-                <h1 className="mt-3 text-balance font-display text-3xl font-semibold leading-tight text-[var(--pa-text)] md:text-[2.2rem]">
+                <h1 className="mt-2 text-balance font-display text-[2rem] font-semibold leading-tight text-[var(--pa-text)] md:mt-3 md:text-[2.2rem]">
                   {currentSection?.label ?? "Workspace"}
                 </h1>
                 <ExpandableNote
@@ -137,7 +139,7 @@ export function AppShell({
                   summary={SHELL_COPY[pathname]?.summary ?? "Grounded guidance for the current persona."}
                 />
               </div>
-              <div className="flex flex-col gap-3 md:flex-row md:items-center">
+              <div className="hidden flex-col gap-3 md:flex-row md:items-center lg:flex">
                 <div className="rounded-full border border-[var(--pa-border-strong)] bg-white/72 px-4 py-2 text-[11px] uppercase tracking-[0.18em] text-[var(--pa-text-soft)] shadow-[var(--pa-shadow-sm)]">
                   Demo data
                 </div>

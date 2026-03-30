@@ -57,6 +57,7 @@ body {
     linear-gradient(180deg, var(--pa-bg), var(--pa-bg-deep));
   color: var(--pa-text);
   font-feature-settings: "ss01" on, "cv10" on;
+  text-rendering: optimizeLegibility;
 }
 
 body::before {
@@ -111,6 +112,14 @@ input {
 
 .skip-link:focus-visible {
   transform: translateY(0);
+}
+
+.pa-safe-top {
+  padding-top: max(0.75rem, env(safe-area-inset-top));
+}
+
+.pa-safe-bottom {
+  padding-bottom: max(0.75rem, env(safe-area-inset-bottom));
 }
 
 ::selection {
