@@ -35,14 +35,14 @@ function isProtectedBranchPreviewApi(baseUrl: string) {
   return baseUrl.startsWith("https://api-git-");
 }
 
-function buildApiHeaders(initHeaders?: HeadersInit) {
+function buildApiHeaders(baseUrl: string, initHeaders?: HeadersInit) {
   const headers = new Headers(initHeaders);
 
   if (!headers.has("Content-Type")) {
     headers.set("Content-Type", "application/json");
   }
 
-  if (typeof window === "undefined" && isProtectedBranchPreviewApi(API_BASE)) {
+  if (typeof window === "undefined" && isProtectedBranchPreviewApi(baseUrl)) {
     const bypassSecret =
       process.env.API_VERCEL_AUTOMATION_BYPASS_SECRET ??
       process.env.API_PROTECTION_BYPASS_SECRET ??
@@ -56,16 +56,15 @@ function buildApiHeaders(initHeaders?: HeadersInit) {
   return headers;
 }
 
-const API_BASE =
-  deriveBranchPreviewApiBase() ??
-  process.env.NEXT_PUBLIC_API_BASE_URL ??
-  "http://127.0.0.1:8000/api/v1";
+const BRANCH_PREVIEW_API_BASE = deriveBranchPreviewApiBase();
+const CONFIGURED_API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://127.0.0.1:8000/api/v1";
+const API_BASE = BRANCH_PREVIEW_API_BASE ?? CONFIGURED_API_BASE;
 
-async function fetchJson<T>(path: string, init?: RequestInit): Promise<T> {
-  const response = await fetch(`${API_BASE}${path}`, {
+async function fetchJsonFromBase<T>(baseUrl: string, path: string, init?: RequestInit): Promise<T> {
+  const response = await fetch(`${baseUrl}${path}`, {
     ...init,
     cache: "no-store",
-    headers: buildApiHeaders(init?.headers)
+    headers: buildApiHeaders(baseUrl, init?.headers)
   });
 
   if (!response.ok) {
@@ -77,6 +76,28 @@ async function fetchJson<T>(path: string, init?: RequestInit): Promise<T> {
   }
 
   return response.json() as Promise<T>;
+}
+
+async function fetchJson<T>(path: string, init?: RequestInit): Promise<T> {
+  const targets = [API_BASE];
+
+  // Branch previews can be blocked from talking to a protected API preview if the bypass secret
+  // is not wired into the web project yet. Fall back to the shared API so the preview stays reviewable.
+  if (BRANCH_PREVIEW_API_BASE && CONFIGURED_API_BASE !== BRANCH_PREVIEW_API_BASE) {
+    targets.push(CONFIGURED_API_BASE);
+  }
+
+  let lastError: unknown = null;
+
+  for (const baseUrl of targets) {
+    try {
+      return await fetchJsonFromBase<T>(baseUrl, path, init);
+    } catch (error) {
+      lastError = error;
+    }
+  }
+
+  throw lastError instanceof Error ? lastError : new Error(`API request failed for ${path}`);
 }
 
 export async function getPersonas() {
