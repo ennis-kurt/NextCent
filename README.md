@@ -1,74 +1,125 @@
-# Personal Accountant AI
+# NextCent
 
 [![CI](https://github.com/ennis-kurt/NextCent/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/ennis-kurt/NextCent/actions/workflows/ci.yml)
 
-Personal Accountant AI is a production-style seeded MVP for a privacy-first personal finance web app. It combines deterministic financial analysis with an agentic explanation layer to help users understand cash flow, debt stress, subscription waste, Safe to Spend, and the next best action.
+NextCent is a seeded personal finance decision-support app built to make cash flow, debt pressure, subscriptions, score drivers, and next actions easier to interpret. It combines deterministic financial modeling with a grounded AI explanation layer, then packages that into a premium web workspace that runs well on desktop and mobile.
 
-## What is implemented
+- Live app: [web-wheat-psi-95.vercel.app](https://web-wheat-psi-95.vercel.app)
+- Stack: Next.js 15, React 19, FastAPI, SQLAlchemy, shared TypeScript contracts, Vercel deployments
 
-- FastAPI backend with seeded personas, SQLite persistence, deterministic finance engines, sanitization policy enforcement, audit logging, debt strategy comparison, simulation, and grounded chat
-- Next.js web app scaffold for landing, onboarding, dashboard, cash flow, debt optimizer, credit health, subscriptions, simulation, monthly review, chat, and privacy screens
-- Shared TypeScript API contracts and design-token package
-- Documentation for architecture, formulas, privacy posture, and brand system
+## Screenshots
 
-## Repo structure
+### Desktop dashboard
+
+![NextCent desktop dashboard](docs/screenshots/desktop-dashboard.png)
+
+### Mobile experience
+
+| Cash Flow | Debt Optimizer |
+| --- | --- |
+| ![NextCent mobile cash flow](docs/screenshots/mobile-cash-flow.png) | ![NextCent mobile debt optimizer](docs/screenshots/mobile-debt-optimizer.png) |
+
+## What the app does
+
+NextCent is structured around seeded financial personas rather than live bank connections. Each persona represents a realistic money situation so the product can demonstrate:
+
+- a daily decision dashboard with Safe to Spend, score drivers, leakage, and top-priority actions
+- cash-flow analysis with runway, pace, and category breakdowns
+- debt strategy comparison with per-card actionable payment plans
+- investment guidance that can recommend investing, buffering cash, or paying debt first
+- credit-health context including utilization, minimum payments, due dates, and recent interest drag
+- subscription cleanup and waste-risk surfacing
+- scenario simulation with saved runs and delta summaries
+- monthly review, privacy notes, and a grounded AI accountant surface
+
+The current product is intentionally read-only and demo-driven. It is built to show how a privacy-conscious financial workspace can feel useful before introducing real account connectivity.
+
+## Monorepo layout
 
 ```text
 apps/
-  api/   FastAPI app, SQLite schema, seeded data, finance services, tests
-  web/   Next.js App Router interface and premium component system
+  api/   FastAPI service, finance engines, seed data, persistence, tests
+  web/   Next.js App Router app, responsive UI, charts, interaction layer
 packages/
-  api-contracts/   Shared TypeScript contracts
-  design-tokens/   Token source files
-  mock-scenarios/  Seeded persona and merchant metadata
+  api-contracts/   Shared TypeScript response and request contracts
+  design-tokens/   Design-token source files
+  mock-scenarios/  Persona and merchant metadata
 docs/
-  architecture/    Runtime architecture and schema notes
-  branding/        Brand, visual, and UX-writing direction
+  architecture/    System, schema, and runtime documentation
+  branding/        Brand system and UX-writing guidance
 scripts/
   bootstrap_api.sh
   run_api.sh
   run_web.sh
 ```
 
-## Local setup
+## Product surfaces
+
+### Web app
+
+- Landing and onboarding
+- Dashboard
+- Cash Flow
+- Debt Optimizer
+- Investment
+- Credit Health
+- Subscriptions
+- Simulation
+- Monthly Review
+- AI Accountant
+- Privacy
 
 ### API
 
+- Seeded persona listing and selection
+- Dashboard summary and recommendation pipeline
+- Cash flow, safe-to-spend, debt, credit, subscription, and investment endpoints
+- Simulation persistence and history
+- Chat session persistence and grounded answer payloads
+- Sanitization policy and privacy endpoints
+
+## Local development
+
+### Prerequisites
+
+- Node.js with `pnpm@10`
+- Python `>=3.10`
+
+### Install workspace dependencies
+
+```bash
+pnpm install
+```
+
+### Run the API
+
 ```bash
 cd apps/api
-/opt/homebrew/opt/python@3.14/bin/python3 -m venv .venv
+python3 -m venv .venv
 source .venv/bin/activate
 python -m pip install --upgrade pip
-python -m pip install fastapi==0.135.2 'uvicorn[standard]==0.42.0' pydantic==2.12.5 sqlalchemy==1.4.39 python-dateutil==2.9.0.post0 eval_type_backport==0.2.2 httpx==0.28.1 pytest==8.3.5
+python -m pip install -e ".[dev]"
 python -m uvicorn app.main:app --reload
 ```
 
-### API tests
+### Run the web app
 
 ```bash
-cd apps/api
-source .venv/bin/activate
-python -m pytest
+NEXT_PUBLIC_API_BASE_URL=http://127.0.0.1:8000/api/v1 pnpm --dir apps/web dev
 ```
 
-### Web
+### Useful commands
 
 ```bash
-cd apps/web
-pnpm install
-pnpm dev
+pnpm dev:web
+pnpm build:web
+pnpm test:api
+pnpm --dir apps/web exec tsc --noEmit
 ```
 
-Set `NEXT_PUBLIC_API_BASE_URL=http://127.0.0.1:8000/api/v1` for the default local split-stack setup.
+## Verification
 
-## Continuous integration
-
-GitHub Actions runs two checks on pushes and pull requests to `main`:
-
-- API: installs `apps/api` with the dev extras on Python 3.14 and runs `pytest`
-- Web: installs the pnpm workspace, type-checks the Next.js app, and runs a production build
-
-The same checks can be run locally with:
+Run the same core checks used during development:
 
 ```bash
 cd apps/api
@@ -76,21 +127,27 @@ source .venv/bin/activate
 python -m pytest
 
 cd /Users/cihatkurt/Documents/personal_accountant
-pnpm install --frozen-lockfile
 pnpm --dir apps/web exec tsc --noEmit
 pnpm --dir apps/web build
 ```
 
-## Notes about this workspace
+## Deployment notes
 
-- The Python backend was verified locally with `pytest` and by starting Uvicorn.
-- The current machine did not have `node`, `npm`, `pnpm`, or Docker installed while implementing this repo, so the Next.js app was scaffolded but not executed here.
-- SQLite is the local default. The schema is relational and organized to remain Postgres-friendly later.
-- External LLM mode is disabled by default. All model-facing payloads must pass through the sanitization service first.
+- The web app and API are deployed separately on Vercel.
+- GitHub Actions verifies the web build/typecheck and API tests.
+- Local development defaults to SQLite.
+- The deployed API is configured for a managed Postgres database.
 
-## Trust and disclaimer framework
+## Trust, scope, and limits
 
-- The product provides financial guidance and insights, not investment, tax, or legal advice.
-- Recommendations are based on available account data plus explicit assumptions where forecasting is involved.
-- Users should verify major financial decisions independently.
-- The MVP models read-only account access and least-privilege handling.
+- This product provides guidance and prioritization, not tax, legal, or regulated investment advice.
+- Recommendations are estimates based on the currently modeled persona data and explicit assumptions.
+- The app is demo-seeded today; outputs are only as good as the modeled inputs.
+- Major financial decisions should always be verified independently.
+
+## Additional docs
+
+- [System architecture](docs/architecture/system-architecture.md)
+- [API and schema notes](docs/architecture/api-and-schema.md)
+- [Brand system](docs/branding/brand-system.md)
+- [Microcopy patterns](docs/branding/microcopy-patterns.md)
