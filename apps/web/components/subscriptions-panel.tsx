@@ -1,11 +1,12 @@
 "use client";
 
 import type { SubscriptionSummary } from "@contracts";
-import { ExternalLink, LoaderCircle } from "lucide-react";
-import { useState, useTransition } from "react";
+import { CalendarClock, ExternalLink, LoaderCircle, Repeat, ShieldCheck } from "lucide-react";
+import type { ReactNode } from "react";
+import { useMemo, useState, useTransition } from "react";
 
 import { getCancellationLink } from "@/lib/api";
-import { formatCurrency, formatDate, formatPercent, titleCase } from "@/lib/format";
+import { formatCurrency, formatDate, formatPercent } from "@/lib/format";
 import { cn } from "@/lib/utils";
 
 import { StatusPill } from "./status-pill";
@@ -33,6 +34,29 @@ function wasteTone(wasteRisk: string) {
   return "default";
 }
 
+function riskRank(value: string) {
+  if (value === "high") return 3;
+  if (value === "review") return 2;
+  return 1;
+}
+
+function actionLabel(value: string) {
+  if (value === "ready_for_review") return "Needs review";
+  return value.replaceAll("_", " ");
+}
+
+function reviewSummary(subscription: SubscriptionSummary) {
+  if (subscription.waste_risk === "high") {
+    return "This is one of the strongest candidates to review or cut before the next charge lands.";
+  }
+
+  if (subscription.waste_risk === "review") {
+    return "This is worth a quick value check before the next billing cycle.";
+  }
+
+  return "This service looks lower-risk right now, but the cost is still visible here for regular review.";
+}
+
 export function SubscriptionsPanel({
   personaId,
   subscriptions
@@ -43,6 +67,14 @@ export function SubscriptionsPanel({
   const [states, setStates] = useState<Record<string, HelpState>>({});
   const [loadingId, setLoadingId] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
+
+  const orderedSubscriptions = useMemo(
+    () =>
+      [...subscriptions].sort(
+        (left, right) => riskRank(right.waste_risk) - riskRank(left.waste_risk) || right.monthly_amount - left.monthly_amount
+      ),
+    [subscriptions]
+  );
 
   function toggleHelp(subscriptionId: string) {
     const current = states[subscriptionId];
@@ -94,43 +126,41 @@ export function SubscriptionsPanel({
   }
 
   return (
-    <div className="grid gap-5 xl:grid-cols-2">
-      {subscriptions.map((subscription) => {
+    <div className="grid gap-4 xl:grid-cols-2">
+      {orderedSubscriptions.map((subscription) => {
         const state = states[subscription.id];
         const isLoading = loadingId === subscription.id && isPending;
 
         return (
-          <article key={subscription.id} className="rounded-[24px] border border-[var(--pa-border)] bg-[var(--pa-surface)] p-5 transition-[transform,box-shadow,border-color] duration-200 hover:-translate-y-0.5 hover:border-[rgba(15,23,32,0.16)] hover:shadow-[0_18px_30px_rgba(8,15,22,0.08)]">
+          <article
+            key={subscription.id}
+            className="rounded-[24px] border border-[var(--pa-border)] bg-[linear-gradient(180deg,rgba(255,255,255,0.94),rgba(247,239,226,0.9))] p-5 shadow-[var(--pa-shadow-sm)] transition-[transform,box-shadow,border-color] duration-200 hover:-translate-y-0.5 hover:border-[rgba(15,23,32,0.16)] hover:shadow-[0_18px_30px_rgba(8,15,22,0.08)]"
+          >
             <div className="flex items-start justify-between gap-4">
               <div>
-                <p className="text-xs uppercase tracking-[0.22em] text-[var(--pa-text-soft)]">{subscription.merchant_key}</p>
-                <h3 className="mt-2 font-display text-xl text-[var(--pa-text)]">{subscription.label}</h3>
+                <p className="text-[11px] uppercase tracking-[0.18em] text-[var(--pa-text-soft)]">{subscription.merchant_key}</p>
+                <h3 className="mt-2 font-display text-[1.25rem] text-[var(--pa-text)]">{subscription.label}</h3>
+                <p className="mt-3 text-sm leading-6 text-[var(--pa-text-muted)]">{reviewSummary(subscription)}</p>
               </div>
               <div className="flex flex-wrap justify-end gap-2">
-                <StatusPill tone={wasteTone(subscription.waste_risk)}>{subscription.waste_risk}</StatusPill>
-                <StatusPill>{titleCase(subscription.action_status)}</StatusPill>
+                <StatusPill tone={wasteTone(subscription.waste_risk)}>{subscription.waste_risk === "review" ? "Check value" : subscription.waste_risk}</StatusPill>
+                <StatusPill>{actionLabel(subscription.action_status)}</StatusPill>
               </div>
             </div>
-            <div className="mt-5 grid gap-3 md:grid-cols-3">
-              <div className="rounded-2xl border border-[var(--pa-border)] bg-white px-4 py-3">
-                <p className="text-xs uppercase tracking-[0.16em] text-[var(--pa-text-soft)]">Monthly spend</p>
-                <p className="mt-2 font-display text-2xl text-[var(--pa-text)]">{formatCurrency(subscription.monthly_amount)}</p>
-              </div>
-              <div className="rounded-2xl border border-[var(--pa-border)] bg-white px-4 py-3">
-                <p className="text-xs uppercase tracking-[0.16em] text-[var(--pa-text-soft)]">Next expected</p>
-                <p className="mt-2 font-display text-2xl text-[var(--pa-text)]">{formatDate(subscription.next_expected_at)}</p>
-              </div>
-              <div className="rounded-2xl border border-[var(--pa-border)] bg-white px-4 py-3">
-                <p className="text-xs uppercase tracking-[0.16em] text-[var(--pa-text-soft)]">Detection confidence</p>
-                <p className="mt-2 font-display text-2xl tabular-nums text-[var(--pa-text)]">{formatPercent(subscription.confidence)}</p>
-              </div>
+
+            <div className="mt-5 grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+              <SummaryMetric icon={<Repeat className="h-4 w-4" />} label="Monthly" value={formatCurrency(subscription.monthly_amount)} />
+              <SummaryMetric icon={<ShieldCheck className="h-4 w-4" />} label="Yearly" value={formatCurrency(subscription.monthly_amount * 12)} />
+              <SummaryMetric icon={<CalendarClock className="h-4 w-4" />} label="Next charge" value={formatDate(subscription.next_expected_at)} />
+              <SummaryMetric icon={<ExternalLink className="h-4 w-4" />} label="Detection confidence" value={formatPercent(subscription.confidence)} />
             </div>
-            <div className="mt-5 rounded-2xl border border-[var(--pa-border)] bg-white p-4">
-              <div className="flex items-center justify-between gap-3">
+
+            <div className="mt-5 rounded-[20px] border border-[var(--pa-border)] bg-white/84 p-4">
+              <div className="flex flex-wrap items-center justify-between gap-3">
                 <div>
-                  <p className="text-sm font-semibold text-[var(--pa-text)]">What to do next</p>
+                  <p className="text-sm font-semibold text-[var(--pa-text)]">Open the merchant path only when you need it</p>
                   <p className="mt-2 text-sm leading-7 text-[var(--pa-text-muted)]">
-                    Review whether you still use this service before the next billing date and manage it from the merchant account page when possible.
+                    NextCent keeps the review simple first, then loads the verified account or help path when you want to act.
                   </p>
                 </div>
                 <button
@@ -144,12 +174,12 @@ export function SubscriptionsPanel({
                   onClick={() => toggleHelp(subscription.id)}
                 >
                   {isLoading ? <LoaderCircle aria-hidden="true" className="h-4 w-4 animate-spin" /> : <ExternalLink aria-hidden="true" className="h-4 w-4" />}
-                  {state?.expanded ? "Hide help path" : "Load help path"}
+                  {state?.expanded ? "Hide path" : "Open help path"}
                 </button>
               </div>
 
               {state?.expanded ? (
-                <div className="mt-4 rounded-2xl border border-[var(--pa-border)] bg-[var(--pa-surface)] p-4">
+                <div className="mt-4 rounded-[20px] border border-[var(--pa-border)] bg-[var(--pa-surface)] p-4">
                   {isLoading ? (
                     <p className="text-sm text-[var(--pa-text-muted)]">Loading verified merchant help details…</p>
                   ) : state?.data ? (
@@ -178,8 +208,8 @@ export function SubscriptionsPanel({
                       </div>
                       {state.data.steps.length > 0 ? (
                         <div>
-                          <p className="text-xs uppercase tracking-[0.16em] text-[var(--pa-text-soft)]">Suggested path</p>
-                          <ol className="mt-3 space-y-2 text-sm text-[var(--pa-text-muted)]">
+                          <p className="text-[11px] uppercase tracking-[0.16em] text-[var(--pa-text-soft)]">Suggested path</p>
+                          <ol className="mt-3 space-y-2 text-sm leading-7 text-[var(--pa-text-muted)]">
                             {state.data.steps.map((step) => (
                               <li key={step}>{step}</li>
                             ))}
@@ -188,9 +218,7 @@ export function SubscriptionsPanel({
                       ) : null}
                     </div>
                   ) : (
-                    <p className="text-sm text-[var(--pa-text-soft)]">
-                      {state?.error ?? "No verified merchant help path is stored for this service yet."}
-                    </p>
+                    <p className="text-sm text-[var(--pa-text-soft)]">{state?.error ?? "No verified merchant help path is stored for this service yet."}</p>
                   )}
                 </div>
               ) : null}
@@ -198,6 +226,26 @@ export function SubscriptionsPanel({
           </article>
         );
       })}
+    </div>
+  );
+}
+
+function SummaryMetric({
+  icon,
+  label,
+  value
+}: {
+  icon: ReactNode;
+  label: string;
+  value: string;
+}) {
+  return (
+    <div className="rounded-[18px] border border-[var(--pa-border)] bg-white/84 px-4 py-3">
+      <div className="flex items-center gap-2 text-[var(--pa-primary)]">
+        {icon}
+        <p className="text-[11px] uppercase tracking-[0.16em] text-[var(--pa-text-soft)]">{label}</p>
+      </div>
+      <p className="mt-3 text-sm font-semibold text-[var(--pa-text)]">{value}</p>
     </div>
   );
 }
