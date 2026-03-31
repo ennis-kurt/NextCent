@@ -10,8 +10,9 @@ def test_personas_endpoint(client):
     response = client.get("/api/v1/personas")
     assert response.status_code == 200
     data = response.json()
-    assert len(data) >= 10
+    assert len(data) >= 11
     assert any(item["id"] == "high-debt-strong-income" for item in data)
+    assert any(item["id"] == "promo-financing-deferred-interest" for item in data)
 
 
 def test_dashboard_contains_recommendations(client):
@@ -67,15 +68,40 @@ def test_simulation_endpoint(client):
         "/api/v1/simulate",
         json={
             "persona_id": "credit-score-pressure",
-            "name": "New car payment",
-            "scenario_type": "new_monthly_expense",
+            "name": "Can I afford this payment?",
+            "scenario_type": "custom_outflow",
+            "cadence": "one_time",
+            "effective_date": "2026-04-03",
             "amount": 400,
         },
     )
     assert response.status_code == 200
     data = response.json()
     assert data["comfort_level"] in {"comfortable", "tight", "risky"}
+    assert data["planner"]["mode"] == "affordability"
+    assert len(data["planner"]["impact_cards"]) == 3
     assert "monthly_surplus" in data["deltas"]
+
+
+def test_custom_allocation_simulation_returns_split_plan(client):
+    response = client.post(
+        "/api/v1/simulate",
+        json={
+            "persona_id": "promo-financing-deferred-interest",
+            "name": "Where should my next dollar go?",
+            "scenario_type": "custom_allocation",
+            "cadence": "one_time",
+            "effective_date": "2026-04-03",
+            "amount": 500,
+        },
+    )
+    assert response.status_code == 200
+    data = response.json()
+    assert data["planner"]["mode"] == "allocation"
+    assert data["planner"]["allocation_plan"]["minimums_preserved"] is True
+    assert data["planner"]["allocation_plan"]["rows"]
+    assert any(row["target_type"] == "debt" for row in data["planner"]["allocation_plan"]["rows"])
+    assert data["planner"]["deficit_analysis"]["largest_safe_amount"] >= 0
 
 
 def test_chat_endpoint_returns_grounded_answer(client):
@@ -138,8 +164,10 @@ def test_simulation_history_returns_recent_records(client):
         "/api/v1/simulate",
         json={
             "persona_id": "credit-score-pressure",
-            "name": "New car payment",
-            "scenario_type": "new_monthly_expense",
+            "name": "Can I afford this payment?",
+            "scenario_type": "custom_outflow",
+            "cadence": "one_time",
+            "effective_date": "2026-04-03",
             "amount": 400,
         },
     )

@@ -134,6 +134,8 @@ export interface DebtStrategyCard {
     account_id: string;
     suggested_payment: number;
     minimum_payment: number;
+    extra_payment: number;
+    total_recommended_payment: number;
     utilization_estimate: number;
   }>;
 }
@@ -282,15 +284,102 @@ export interface ChatAnswer {
   source_cards: Array<Record<string, unknown>>;
 }
 
+export type SimulationScenarioType =
+  | "custom_outflow"
+  | "custom_allocation"
+  | "new_monthly_expense"
+  | "extra_debt_payment"
+  | "cancel_subscriptions"
+  | "reduce_category_spend"
+  | "move_to_savings";
+
+export type SimulationCadence = "one_time" | "monthly";
+
+export interface SimulationImpactCard {
+  key: "today" | "before_payday" | "month_end";
+  label: string;
+  current_value: number;
+  projected_value: number;
+  delta: number;
+  detail: string;
+}
+
+export interface SimulationDeficitAnalysis {
+  is_doable: boolean;
+  deficit_amount: number;
+  tightest_date: string | null;
+  remaining_cushion: number;
+  recurring_shortfall: number;
+  largest_safe_amount: number;
+  explanation: string;
+}
+
+export interface SimulationCashImpact {
+  liquid_cash_now: number;
+  liquid_cash_after: number;
+  safe_to_spend_this_week_now: number;
+  safe_to_spend_this_week_after: number;
+  safe_to_spend_until_payday_now: number;
+  safe_to_spend_until_payday_after: number;
+  projected_low_balance: number;
+  projected_low_balance_date: string | null;
+  current_month_end_balance: number;
+  projected_month_end_balance: number;
+}
+
+export interface SimulationMonthlyImpact {
+  current_surplus: number;
+  projected_surplus: number;
+  delta: number;
+  recurring_shortfall: number;
+  month_end_delta: number;
+}
+
+export interface SimulationAllocationRow {
+  target_type: "debt" | "buffer" | "investment";
+  target_id: string | null;
+  target_name: string;
+  amount: number;
+  base_amount: number;
+  extra_amount: number;
+  rationale: string;
+  expected_impact: string;
+  tone: "safe" | "important" | "urgent";
+}
+
+export interface SimulationAllocationPlan {
+  minimums_preserved: boolean;
+  total_amount: number;
+  rows: SimulationAllocationRow[];
+  comparison: {
+    naive_label: string;
+    naive_summary: string;
+    recommended_summary: string;
+  } | null;
+}
+
+export interface SimulationPlannerResult {
+  mode: "affordability" | "allocation" | "template";
+  cadence: SimulationCadence;
+  effective_date: string | null;
+  amount: number;
+  verdict_label: string;
+  verdict_summary: string;
+  status: "comfortable" | "tight" | "risky";
+  impact_cards: SimulationImpactCard[];
+  deficit_analysis: SimulationDeficitAnalysis;
+  cash_impact: SimulationCashImpact;
+  monthly_impact: SimulationMonthlyImpact;
+  allocation_plan: SimulationAllocationPlan | null;
+  recommended_next_steps: string[];
+}
+
 export interface SimulationRequest {
   persona_id: string;
   name: string;
-  scenario_type:
-    | "new_monthly_expense"
-    | "extra_debt_payment"
-    | "cancel_subscriptions"
-    | "reduce_category_spend"
-    | "move_to_savings";
+  scenario_type: SimulationScenarioType;
+  cadence?: SimulationCadence;
+  effective_date?: string;
   amount?: number;
   category_key?: string;
   subscription_ids?: string[];
@@ -309,17 +398,13 @@ export interface SimulationResult {
   current_state: Record<string, string | number | null>;
   simulated_state: Record<string, string | number | null>;
   deltas: Record<string, string | number | null>;
+  planner: SimulationPlannerResult | null;
 }
 
 export interface SimulationHistoryItem {
   scenario_id: string;
   name: string;
-  scenario_type:
-    | "new_monthly_expense"
-    | "extra_debt_payment"
-    | "cancel_subscriptions"
-    | "reduce_category_spend"
-    | "move_to_savings";
+  scenario_type: SimulationScenarioType;
   created_at: string;
   result: SimulationResult;
 }

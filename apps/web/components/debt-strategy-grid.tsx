@@ -130,7 +130,7 @@ export function DebtStrategyGrid({
           <div>
             <p className="text-xs uppercase tracking-[0.18em] text-[var(--pa-text-soft)]">Actionable plan</p>
             <p className="mt-2 text-sm text-[var(--pa-text-muted)]">
-              Focus extra payments where this strategy produces the most payoff leverage.
+              Minimums stay current on every card first. The totals below show where the extra payment should go next.
             </p>
           </div>
           <div className="flex flex-wrap gap-2">
@@ -164,7 +164,7 @@ export function DebtStrategyGrid({
                       </p>
                     </div>
                     <div className="rounded-[20px] border border-[rgba(31,116,104,0.14)] bg-[var(--pa-primary-soft)]/55 px-5 py-4 lg:min-w-[220px]">
-                      <p className="text-[11px] uppercase tracking-[0.16em] text-[var(--pa-text-soft)]">Suggested payment</p>
+                      <p className="text-[11px] uppercase tracking-[0.16em] text-[var(--pa-text-soft)]">Total recommended payment</p>
                       <p className="mt-2 font-display text-3xl tabular-nums text-[var(--pa-text)]">
                         {formatCurrency(suggestedPayment)}
                       </p>

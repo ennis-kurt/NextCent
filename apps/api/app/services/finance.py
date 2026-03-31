@@ -49,6 +49,14 @@ from ..schemas import (
     RecommendationSchema,
     RiskAlertSchema,
     SafeToSpendSnapshotSchema,
+    SimulationAllocationComparison,
+    SimulationAllocationPlan,
+    SimulationAllocationRow,
+    SimulationCashImpact,
+    SimulationDeficitAnalysis,
+    SimulationImpactCard,
+    SimulationMonthlyImpact,
+    SimulationPlannerResult,
     SimulationResultSchema,
     SubscriptionSummary,
 )
@@ -881,6 +889,8 @@ def _simulate_strategy(cards: list[CreditCardSummary], payment_pool: float, stra
                 "account_id": card.account_id,
                 "suggested_payment": round(base + extra, 2),
                 "minimum_payment": round(card.minimum_payment, 2),
+                "extra_payment": round(extra, 2),
+                "total_recommended_payment": round(base + extra, 2),
                 "utilization_estimate": round(card.estimated_utilization, 4),
             }
         )
@@ -1013,7 +1023,7 @@ def compute_investment_guidance(
         debt_amount = round(
             max(
                 0.0,
-                top_debt_target["suggested_payment"] if top_debt_target else min(monthly_surplus * 0.55, max(monthly["leakage"] * 4, 150.0)),
+                (top_debt_target.get("extra_payment") or top_debt_target["suggested_payment"]) if top_debt_target else min(monthly_surplus * 0.55, max(monthly["leakage"] * 4, 150.0)),
             ),
             2,
         )
@@ -1177,7 +1187,7 @@ def compute_recommendations(
                 confidence=0.88,
                 category="debt_optimizer",
                 affected_accounts=[top_target["account_id"]],
-                suggested_action_amount=top_target["suggested_payment"],
+                suggested_action_amount=top_target.get("extra_payment") or top_target["suggested_payment"],
                 why_now="Current balances and utilization make payment order matter this cycle.",
                 assumptions=["APR and credit-limit seed data are representative.", "You can cover minimums on every card first."],
                 created_at=created_at,
@@ -1699,10 +1709,421 @@ def build_dashboard_response(db: Session, persona_id: str) -> DashboardResponse:
     )
 
 
-def run_simulation(db: Session, persona_id: str, payload: dict[str, Any]) -> SimulationResultSchema:
-    context = fetch_user_context(db, persona_id)
-    safe = compute_safe_to_spend(context)
-    health = compute_financial_health(context, safe)
+def _round_money(value: float) -> float:
+    return round(float(value), 2)
+
+
+def _month_end_date() -> date:
+    return REFERENCE_DATE.replace(day=1) + relativedelta(months=1) - timedelta(days=1)
+
+
+def _simulation_event_order(kind: str) -> int:
+    order = {
+        "income": 0,
+        "custom_outflow": 1,
+        "custom_allocation": 1,
+        "bill": 2,
+        "debt_due": 2,
+        "subscription": 3,
+        "savings_transfer": 4,
+    }
+    return order.get(kind, 5)
+
+
+def _upcoming_event_payloads(context: UserContext, *, horizon_days: int) -> list[dict[str, Any]]:
+    return [
+        {
+            "date": event.date,
+            "kind": event.kind,
+            "label": event.label,
+            "amount": float(event.amount),
+            "account_id": event.account_id,
+        }
+        for event in _upcoming_cash_events(context, horizon_days=horizon_days)
+    ]
+
+
+def _project_checking_path(
+    context: UserContext,
+    *,
+    horizon_days: int,
+    extra_events: list[dict[str, Any]] | None = None,
+) -> list[dict[str, Any]]:
+    running_balance = latest_balance_summary(context).checking_balance
+    points: list[dict[str, Any]] = [
+        {
+            "date": REFERENCE_DATE,
+            "kind": "starting_balance",
+            "label": "Starting checking balance",
+            "amount": 0.0,
+            "balance": _round_money(running_balance),
+        }
+    ]
+
+    events = _upcoming_event_payloads(context, horizon_days=horizon_days)
+    if extra_events:
+        events.extend(extra_events)
+    events.sort(key=lambda event: (event["date"], _simulation_event_order(str(event["kind"])), str(event["label"])))
+
+    for event in events:
+        delta = float(event["amount"]) if event["kind"] == "income" else -float(event["amount"])
+        running_balance += delta
+        points.append(
+            {
+                "date": event["date"],
+                "kind": event["kind"],
+                "label": event["label"],
+                "amount": _round_money(delta),
+                "balance": _round_money(running_balance),
+            }
+        )
+
+    return points
+
+
+def _latest_projection_within(points: list[dict[str, Any]], target_date: date) -> float:
+    relevant = [point for point in points if point["date"] <= target_date]
+    if not relevant:
+        return _round_money(points[0]["balance"])
+    return _round_money(relevant[-1]["balance"])
+
+
+def _lowest_balance_from(points: list[dict[str, Any]], start_date: date) -> tuple[date, float]:
+    relevant = [point for point in points if point["date"] >= start_date]
+    if not relevant:
+        tail = points[-1]
+        return tail["date"], _round_money(tail["balance"])
+    low = min(relevant, key=lambda point: point["balance"])
+    return low["date"], _round_money(low["balance"])
+
+
+def _simulation_reference_date(raw_value: Any) -> date:
+    chosen = _coerce_date(raw_value) or REFERENCE_DATE
+    return max(chosen, REFERENCE_DATE)
+
+
+def _planner_status(
+    *,
+    cadence: str,
+    amount: float,
+    projected_low_balance: float,
+    monthly_surplus_after: float,
+    safe_this_week_after: float,
+    risk_buffer: float,
+) -> tuple[str, str, str]:
+    if cadence == "monthly":
+        if monthly_surplus_after < 0:
+            return (
+                "risky",
+                "This creates a monthly deficit",
+                "This recurring amount is larger than the current month can carry without cutting something else first.",
+            )
+        if safe_this_week_after < risk_buffer * 0.2 or monthly_surplus_after < max(75.0, amount * 0.2):
+            return (
+                "tight",
+                "You can do this, but it tightens the month",
+                "The amount still fits, but it leaves much less room for the rest of the month.",
+            )
+        return (
+            "comfortable",
+            "You can do this comfortably",
+            "Current income and bill timing suggest this fits without putting the month under unusual pressure.",
+        )
+
+    if projected_low_balance < 0:
+        return (
+            "risky",
+            "This creates a deficit",
+            "The payment would push checking below zero at some point in the current projection unless you move the date or reduce the amount.",
+        )
+    if projected_low_balance < risk_buffer * 0.4 or safe_this_week_after < risk_buffer * 0.2:
+        return (
+            "tight",
+            "You can do this, but it tightens the month",
+            "The payment appears possible, but it leaves a thinner buffer before the next paycheck.",
+        )
+    return (
+        "comfortable",
+        "You can do this comfortably",
+        "The payment fits inside the current cash path without materially stressing the near-term buffer.",
+    )
+
+
+def _build_impact_cards(
+    *,
+    baseline_points: list[dict[str, Any]],
+    simulated_points: list[dict[str, Any]],
+    safe: SafeToSpendSnapshotSchema,
+    liquid_cash_now: float,
+    liquid_cash_after: float,
+    safe_until_after: float,
+    effective_date: date,
+) -> list[SimulationImpactCard]:
+    month_end = _month_end_date()
+    current_month_end = _latest_projection_within(baseline_points, month_end)
+    projected_month_end = _latest_projection_within(simulated_points, month_end)
+    today_projected = liquid_cash_after if effective_date <= REFERENCE_DATE else liquid_cash_now
+    return [
+        SimulationImpactCard(
+            key="today",
+            label="Today",
+            current_value=_round_money(liquid_cash_now),
+            projected_value=_round_money(today_projected),
+            delta=_round_money(today_projected - liquid_cash_now),
+            detail="Immediate liquid cash if you make this move now or on the selected date.",
+        ),
+        SimulationImpactCard(
+            key="before_payday",
+            label="Before payday",
+            current_value=_round_money(safe.safe_to_spend_until_payday),
+            projected_value=_round_money(safe_until_after),
+            delta=_round_money(safe_until_after - safe.safe_to_spend_until_payday),
+            detail="Room left after the next cluster of bills and minimum debt payments.",
+        ),
+        SimulationImpactCard(
+            key="month_end",
+            label="Month-end",
+            current_value=_round_money(current_month_end),
+            projected_value=_round_money(projected_month_end),
+            delta=_round_money(projected_month_end - current_month_end),
+            detail="Projected checking balance by the end of the current month.",
+        ),
+    ]
+
+
+def _allocation_row(
+    *,
+    target_type: str,
+    target_id: str | None,
+    target_name: str,
+    amount: float,
+    base_amount: float,
+    rationale: str,
+    expected_impact: str,
+    tone: str,
+) -> SimulationAllocationRow:
+    return SimulationAllocationRow(
+        target_type=target_type,
+        target_id=target_id,
+        target_name=target_name,
+        amount=_round_money(amount),
+        base_amount=_round_money(base_amount),
+        extra_amount=_round_money(max(0.0, amount - base_amount)),
+        rationale=rationale,
+        expected_impact=expected_impact,
+        tone=tone,
+    )
+
+
+def _debt_allocation_rows(
+    context: UserContext,
+    *,
+    amount: float,
+    excluded_account_ids: set[str] | None = None,
+) -> list[SimulationAllocationRow]:
+    if amount <= 0:
+        return []
+
+    account_lookup = _account_lookup(context)
+    deferred_items = _active_deferred_interest_items(context)
+    deferred_by_account = {item["account"].id: item for item in deferred_items}
+    scored_cards: list[tuple[CreditCardSummary, float]] = []
+    statement_window = REFERENCE_DATE + timedelta(days=12)
+
+    for card in context.cards:
+        if excluded_account_ids and card.account_id in excluded_account_ids:
+            continue
+        deferred_item = deferred_by_account.get(card.account_id)
+        deferred_score = 0.0
+        if deferred_item:
+            deferred_gap = max(0.0, deferred_item["required_monthly_payment"] - float(card.minimum_payment))
+            deferred_score = 140.0 + deferred_gap
+            if deferred_item["offer"].days_remaining <= 45:
+                deferred_score += 65.0
+        apr_score = max(float(card.apr or 0.0) - 10.0, 0.0) * 3.0
+        utilization_score = max(float(card.estimated_utilization or 0.0) - 0.35, 0.0) * 120.0
+        statement_score = 18.0 if card.statement_close_date <= statement_window else 0.0
+        interest_score = min(card.current_balance * 0.002, 20.0)
+        total_score = deferred_score + apr_score + utilization_score + statement_score + interest_score
+        if total_score > 0:
+            scored_cards.append((card, total_score))
+
+    scored_cards.sort(key=lambda item: item[1], reverse=True)
+    if not scored_cards:
+        return []
+
+    candidates = scored_cards[: max(2, min(3, len(scored_cards)))]
+    score_total = sum(score for _, score in candidates) or 1.0
+    allocated = 0.0
+    rows: list[SimulationAllocationRow] = []
+
+    for index, (card, score) in enumerate(candidates):
+        share = score / score_total
+        raw_extra = amount if len(candidates) == 1 else amount * share
+        extra_amount = amount - allocated if index == len(candidates) - 1 else _round_money(raw_extra)
+        if extra_amount <= 0:
+            continue
+        allocated += extra_amount
+        account = account_lookup.get(card.account_id)
+        deferred_item = deferred_by_account.get(card.account_id)
+        if deferred_item:
+            rationale = (
+                f"{account.display_name if account else card.account_id} has promo financing that expires on "
+                f"{deferred_item['offer'].expires_on.strftime('%b %d')}."
+            )
+            impact = (
+                f"Moves the total monthly payment toward the ${deferred_item['required_monthly_payment']:.0f} pace needed to clear the promo before it expires."
+            )
+            tone = "urgent" if deferred_item["offer"].days_remaining <= 45 else "important"
+        else:
+            rationale = (
+                f"{account.display_name if account else card.account_id} combines higher APR, utilization pressure, and current balance weight."
+            )
+            impact = (
+                f"Moves this card to about ${_round_money(card.minimum_payment + extra_amount)} total for the month after its baseline minimum."
+            )
+            tone = "important"
+        rows.append(
+            _allocation_row(
+                target_type="debt",
+                target_id=card.account_id,
+                target_name=account.display_name if account else card.account_id,
+                amount=card.minimum_payment + extra_amount,
+                base_amount=card.minimum_payment,
+                rationale=rationale,
+                expected_impact=impact,
+                tone=tone,
+            )
+        )
+
+    return rows
+
+
+def _build_allocation_plan(
+    context: UserContext,
+    *,
+    amount: float,
+    safe: SafeToSpendSnapshotSchema,
+    investment: InvestmentGuidanceSchema,
+) -> SimulationAllocationPlan:
+    balances = latest_balance_summary(context)
+    monthly = monthly_totals(context)
+    liquid_buffer_months = balances.liquid_cash / max(monthly["monthly_fixed"], 1.0)
+    fragile_buffer = (
+        safe.spending_velocity_status != "safe"
+        or safe.safe_to_spend_until_payday < safe.risk_buffer * 0.75
+        or liquid_buffer_months < 1.5
+    )
+    remaining = amount
+    rows: list[SimulationAllocationRow] = []
+
+    urgent_deferred = [item for item in _active_deferred_interest_items(context) if item["offer"].days_remaining <= 120]
+    excluded_account_ids = {item["account"].id for item in urgent_deferred}
+    for item in urgent_deferred:
+        if remaining <= 0:
+            break
+        card = item["card"]
+        account = item["account"]
+        extra_needed = max(0.0, item["required_monthly_payment"] - float(card.minimum_payment))
+        if extra_needed <= 0:
+            continue
+        extra_amount = min(remaining, extra_needed)
+        remaining -= extra_amount
+        rows.append(
+            _allocation_row(
+                target_type="debt",
+                target_id=account.id,
+                target_name=account.display_name,
+                amount=card.minimum_payment + extra_amount,
+                base_amount=card.minimum_payment,
+                rationale=f"{item['offer'].label} expires on {item['offer'].expires_on.strftime('%b %d')}, so this card needs deadline-aware pacing first.",
+                expected_impact=f"Gets the card closer to the ${item['required_monthly_payment']:.0f} total monthly payment needed to avoid deferred interest.",
+                tone="urgent" if item["offer"].days_remaining <= 45 else "important",
+            )
+        )
+
+    if remaining > 0 and fragile_buffer:
+        buffer_gap = max(
+            0.0,
+            safe.risk_buffer - safe.safe_to_spend_until_payday,
+            (1.5 - liquid_buffer_months) * max(monthly["monthly_fixed"] * 0.25, 100.0),
+        )
+        buffer_amount = min(remaining, _round_money(max(min(amount * 0.3, remaining), buffer_gap)))
+        if buffer_amount > 0:
+            rows.append(
+                _allocation_row(
+                    target_type="buffer",
+                    target_id=None,
+                    target_name="Cash reserve",
+                    amount=buffer_amount,
+                    base_amount=0.0,
+                    rationale="The next-payday cushion is still fragile enough that some of this amount should stay liquid.",
+                    expected_impact="Leaves more room if bills cluster before the next paycheck.",
+                    tone="important",
+                )
+            )
+            remaining -= buffer_amount
+
+    if remaining > 0:
+        debt_rows = _debt_allocation_rows(context, amount=remaining, excluded_account_ids=excluded_account_ids)
+        if debt_rows:
+            rows.extend(debt_rows)
+            remaining -= sum(row.extra_amount for row in debt_rows)
+
+    if remaining > 0 and investment.posture == "invest_now":
+        invest_amount = min(remaining, max(50.0, min(float(investment.recommended_investment_amount), remaining)))
+        rows.append(
+            _allocation_row(
+                target_type="investment",
+                target_id=None,
+                target_name=investment.investment_channel,
+                amount=invest_amount,
+                base_amount=0.0,
+                rationale="Debt drag and liquidity pressure look contained enough to let part of this amount start compounding.",
+                expected_impact="Starts a steady investment habit without crowding out minimums or near-term cash needs.",
+                tone="safe",
+            )
+        )
+        remaining -= invest_amount
+
+    if remaining > 0:
+        rows.append(
+            _allocation_row(
+                target_type="buffer",
+                target_id=None,
+                target_name="Cash reserve",
+                amount=remaining,
+                base_amount=0.0,
+                rationale="The rest is better kept liquid than forced into a lower-priority move.",
+                expected_impact="Keeps optionality for the next bill cluster or a larger debt move.",
+                tone="safe",
+            )
+        )
+
+    account_lookup = _account_lookup(context)
+    top_apr_card = max(context.cards, key=lambda card: card.apr or 0.0, default=None)
+    top_apr_name = account_lookup.get(top_apr_card.account_id).display_name if top_apr_card and account_lookup.get(top_apr_card.account_id) else "the top-APR card"
+    comparison = SimulationAllocationComparison(
+        naive_label="Naive alternative",
+        naive_summary=f"Sending the full amount to {top_apr_name} would ignore promo deadlines and near-term buffer needs.",
+        recommended_summary="The recommended split keeps minimums covered first, handles deadline-driven debt, and only opens investing after debt and cash needs are satisfied.",
+    )
+
+    return SimulationAllocationPlan(
+        minimums_preserved=True,
+        total_amount=_round_money(amount),
+        rows=rows,
+        comparison=comparison,
+    )
+
+
+def _legacy_simulation_result(
+    db: Session,
+    context: UserContext,
+    safe: SafeToSpendSnapshotSchema,
+    health: FinancialHealthScoreSchema,
+    payload: dict[str, Any],
+) -> SimulationResultSchema:
     monthly = monthly_totals(context)
     current_state = {
         "monthly_surplus": round(monthly["monthly_income"] - monthly["monthly_spending"], 2),
@@ -1780,6 +2201,237 @@ def run_simulation(db: Session, persona_id: str, payload: dict[str, Any]) -> Sim
         current_state=current_state,
         simulated_state=simulated,
         deltas=deltas,
+        planner=None,
+    )
+    db.add(
+        SimulationResult(
+            scenario_id=scenario.id,
+            created_at=datetime.utcnow(),
+            summary_json=result.model_dump(mode="json"),
+        )
+    )
+    db.commit()
+    return result
+
+
+def run_simulation(db: Session, persona_id: str, payload: dict[str, Any]) -> SimulationResultSchema:
+    context = fetch_user_context(db, persona_id)
+    safe = compute_safe_to_spend(context)
+    health = compute_financial_health(context, safe)
+    scenario_type = payload["scenario_type"]
+    if scenario_type not in {"custom_outflow", "custom_allocation"}:
+        return _legacy_simulation_result(db, context, safe, health, payload)
+
+    balances = latest_balance_summary(context)
+    monthly = monthly_totals(context)
+    debt = compute_debt_strategies(context, safe)
+    investment = compute_investment_guidance(context, safe, debt)
+    next_payday = compute_next_payday(context)
+    cadence = str(payload.get("cadence") or "monthly")
+    amount = max(0.0, float(payload.get("amount") or 0.0))
+    effective_date = _simulation_reference_date(payload.get("effective_date"))
+    if cadence == "monthly":
+        effective_date = REFERENCE_DATE
+
+    horizon_days = max(35, min(90, (effective_date - REFERENCE_DATE).days + 35))
+    baseline_points = _project_checking_path(context, horizon_days=horizon_days)
+    extra_event = {
+        "date": effective_date,
+        "kind": "custom_allocation" if scenario_type == "custom_allocation" else "custom_outflow",
+        "label": str(payload.get("name") or "Planned money move"),
+        "amount": amount,
+        "account_id": None,
+    }
+    simulated_points = _project_checking_path(context, horizon_days=horizon_days, extra_events=[extra_event])
+
+    monthly_surplus_now = _round_money(monthly["monthly_income"] - monthly["monthly_spending"])
+    monthly_surplus_after = _round_money(monthly_surplus_now - amount) if cadence == "monthly" else monthly_surplus_now
+    safe_this_week_after = _round_money(
+        max(
+            0.0,
+            safe.safe_to_spend_this_week
+            - (
+                amount / 4.3
+                if cadence == "monthly"
+                else amount * (0.35 if scenario_type == "custom_outflow" else 0.22)
+            ),
+        )
+    )
+    safe_until_after = _round_money(
+        max(
+            0.0,
+            safe.safe_to_spend_until_payday
+            - (
+                amount * max((next_payday - REFERENCE_DATE).days, 1) / 30.0
+                if cadence == "monthly"
+                else amount if effective_date <= next_payday else 0.0
+            ),
+        )
+    )
+
+    tightest_date, projected_low_balance = _lowest_balance_from(simulated_points, REFERENCE_DATE)
+    baseline_low_date, baseline_low_balance = _lowest_balance_from(baseline_points, REFERENCE_DATE)
+    current_month_end_balance = _latest_projection_within(baseline_points, _month_end_date())
+    projected_month_end_balance = _latest_projection_within(simulated_points, _month_end_date())
+    largest_safe_amount = _round_money(
+        max(0.0, _lowest_balance_from(baseline_points, effective_date)[1]) if cadence == "one_time" else max(0.0, monthly_surplus_now)
+    )
+    deficit_amount = _round_money(max(0.0, -projected_low_balance) if cadence == "one_time" else max(0.0, -monthly_surplus_after))
+    remaining_cushion = _round_money(max(0.0, projected_low_balance) if cadence == "one_time" else max(0.0, monthly_surplus_after))
+
+    comfort, verdict_label, verdict_summary = _planner_status(
+        cadence=cadence,
+        amount=amount,
+        projected_low_balance=projected_low_balance,
+        monthly_surplus_after=monthly_surplus_after,
+        safe_this_week_after=safe_this_week_after,
+        risk_buffer=safe.risk_buffer,
+    )
+
+    facts = [
+        "Minimum payments on every card stay covered before extra debt allocation is considered.",
+        f"Known bills and paychecks over the next {horizon_days} days are included in the projection.",
+    ]
+    estimates = [
+        f"Current monthly surplus is about ${monthly_surplus_now:.0f} before this change.",
+        f"Current projected low checking balance is about ${baseline_low_balance:.0f} on {baseline_low_date.strftime('%b %d')}.",
+    ]
+    warnings: list[str] = []
+    if comfort == "tight":
+        warnings.append("This still fits, but it leaves a noticeably thinner cushion before the next paycheck.")
+    if comfort == "risky":
+        warnings.append("At the selected amount and timing, the projection goes below zero unless another cash source or spending change offsets it.")
+    assumptions = [
+        "Known recurring bills and minimum debt payments continue at the current pace.",
+        "No outside income is added beyond the paychecks already represented in the data.",
+        "The planner treats the selected amount as new money being directed on top of current baseline obligations.",
+    ]
+
+    allocation_plan = None
+    if scenario_type == "custom_allocation" and deficit_amount == 0:
+        allocation_plan = _build_allocation_plan(
+            context,
+            amount=amount,
+            safe=safe,
+            investment=investment,
+        )
+
+    if cadence == "one_time":
+        liquid_cash_after = _round_money(max(0.0, balances.liquid_cash - amount))
+    elif scenario_type == "custom_outflow":
+        liquid_cash_after = _round_money(max(0.0, balances.liquid_cash - amount))
+    else:
+        buffer_hold = sum(row.amount for row in allocation_plan.rows if row.target_type == "buffer") if allocation_plan else 0.0
+        liquid_cash_after = _round_money(max(0.0, balances.liquid_cash - (amount - buffer_hold)))
+
+    if scenario_type == "custom_allocation" and deficit_amount == 0:
+        recommended_next_steps = [
+            "Minimums stay covered first, then use the split below as the next-dollar plan.",
+            "If you want to compare another amount, change the number and watch how the split and cushion change together.",
+        ]
+    elif scenario_type == "custom_allocation":
+        recommended_next_steps = [
+            f"Reduce the amount to about ${largest_safe_amount:.0f} or move the timing later before using the allocation plan.",
+            "Once the amount fits, the planner can split it across debt, reserve, and investing.",
+        ]
+    elif deficit_amount > 0:
+        recommended_next_steps = [
+            f"Reduce the amount by about ${deficit_amount:.0f} or move the date until after {next_payday.strftime('%b %d')}.",
+            f"About ${largest_safe_amount:.0f} is the largest amount that currently fits without creating a projected deficit.",
+        ]
+    else:
+        recommended_next_steps = [
+            "This amount fits within the current cash path.",
+            "If you are deciding where to send it, switch to the allocation tab to compare debt, reserve, and investing.",
+        ]
+
+    current_state = {
+        "monthly_surplus": monthly_surplus_now,
+        "safe_to_spend_this_week": safe.safe_to_spend_this_week,
+        "safe_to_spend_until_payday": safe.safe_to_spend_until_payday,
+        "liquid_cash": balances.liquid_cash,
+        "health_score": health.overall_score,
+    }
+    simulated_state = {
+        "monthly_surplus": monthly_surplus_after,
+        "safe_to_spend_this_week": safe_this_week_after,
+        "safe_to_spend_until_payday": safe_until_after,
+        "liquid_cash": liquid_cash_after,
+        "health_score": health.overall_score,
+    }
+    deltas = {
+        key: _round_money(float(simulated_state[key]) - float(current_state[key]))
+        for key in current_state
+    }
+
+    scenario = SimulationScenario(
+        user_id=context.user.id,
+        name=payload["name"],
+        scenario_type=scenario_type,
+        inputs_json=payload,
+        created_at=datetime.utcnow(),
+    )
+    db.add(scenario)
+    db.flush()
+    result = SimulationResultSchema(
+        scenario_id=scenario.id,
+        summary=verdict_summary,
+        comfort_level=comfort,
+        facts=facts,
+        estimates=estimates,
+        warnings=warnings,
+        assumptions=assumptions,
+        current_state=current_state,
+        simulated_state=simulated_state,
+        deltas=deltas,
+        planner=SimulationPlannerResult(
+            mode="allocation" if scenario_type == "custom_allocation" else "affordability",
+            cadence=cadence,
+            effective_date=effective_date if cadence == "one_time" else None,
+            amount=_round_money(amount),
+            verdict_label=verdict_label,
+            verdict_summary=verdict_summary,
+            status=comfort,
+            impact_cards=_build_impact_cards(
+                baseline_points=baseline_points,
+                simulated_points=simulated_points,
+                safe=safe,
+                liquid_cash_now=balances.liquid_cash,
+                liquid_cash_after=liquid_cash_after,
+                safe_until_after=safe_until_after,
+                effective_date=effective_date,
+            ),
+            deficit_analysis=SimulationDeficitAnalysis(
+                is_doable=deficit_amount == 0,
+                deficit_amount=deficit_amount,
+                tightest_date=tightest_date,
+                remaining_cushion=remaining_cushion,
+                recurring_shortfall=_round_money(max(0.0, -monthly_surplus_after)),
+                largest_safe_amount=largest_safe_amount,
+                explanation=f"This amount {'fits' if deficit_amount == 0 else 'does not fit'} based on known paychecks, bills, and debt minimums.",
+            ),
+            cash_impact=SimulationCashImpact(
+                liquid_cash_now=_round_money(balances.liquid_cash),
+                liquid_cash_after=liquid_cash_after,
+                safe_to_spend_this_week_now=_round_money(safe.safe_to_spend_this_week),
+                safe_to_spend_this_week_after=safe_this_week_after,
+                safe_to_spend_until_payday_now=_round_money(safe.safe_to_spend_until_payday),
+                safe_to_spend_until_payday_after=safe_until_after,
+                projected_low_balance=_round_money(projected_low_balance),
+                projected_low_balance_date=tightest_date,
+                current_month_end_balance=_round_money(current_month_end_balance),
+                projected_month_end_balance=_round_money(projected_month_end_balance),
+            ),
+            monthly_impact=SimulationMonthlyImpact(
+                current_surplus=_round_money(monthly_surplus_now),
+                projected_surplus=_round_money(monthly_surplus_after),
+                delta=_round_money(monthly_surplus_after - monthly_surplus_now),
+                recurring_shortfall=_round_money(max(0.0, -monthly_surplus_after)),
+                month_end_delta=_round_money(projected_month_end_balance - current_month_end_balance),
+            ),
+            allocation_plan=allocation_plan,
+            recommended_next_steps=recommended_next_steps,
+        ),
     )
     db.add(
         SimulationResult(

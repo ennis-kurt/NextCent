@@ -287,16 +287,101 @@ class CreditSummaryResponse(BaseModel):
     cards: list[AccountSummary]
 
 
+class SimulationImpactCard(BaseModel):
+    key: Literal["today", "before_payday", "month_end"]
+    label: str
+    current_value: float
+    projected_value: float
+    delta: float
+    detail: str
+
+
+class SimulationDeficitAnalysis(BaseModel):
+    is_doable: bool
+    deficit_amount: float
+    tightest_date: date | None = None
+    remaining_cushion: float
+    recurring_shortfall: float
+    largest_safe_amount: float
+    explanation: str
+
+
+class SimulationCashImpact(BaseModel):
+    liquid_cash_now: float
+    liquid_cash_after: float
+    safe_to_spend_this_week_now: float
+    safe_to_spend_this_week_after: float
+    safe_to_spend_until_payday_now: float
+    safe_to_spend_until_payday_after: float
+    projected_low_balance: float
+    projected_low_balance_date: date | None = None
+    current_month_end_balance: float
+    projected_month_end_balance: float
+
+
+class SimulationMonthlyImpact(BaseModel):
+    current_surplus: float
+    projected_surplus: float
+    delta: float
+    recurring_shortfall: float
+    month_end_delta: float
+
+
+class SimulationAllocationRow(BaseModel):
+    target_type: Literal["debt", "buffer", "investment"]
+    target_id: str | None = None
+    target_name: str
+    amount: float
+    base_amount: float
+    extra_amount: float
+    rationale: str
+    expected_impact: str
+    tone: Literal["safe", "important", "urgent"]
+
+
+class SimulationAllocationComparison(BaseModel):
+    naive_label: str
+    naive_summary: str
+    recommended_summary: str
+
+
+class SimulationAllocationPlan(BaseModel):
+    minimums_preserved: bool
+    total_amount: float
+    rows: list[SimulationAllocationRow]
+    comparison: SimulationAllocationComparison | None = None
+
+
+class SimulationPlannerResult(BaseModel):
+    mode: Literal["affordability", "allocation", "template"]
+    cadence: Literal["one_time", "monthly"]
+    effective_date: date | None = None
+    amount: float
+    verdict_label: str
+    verdict_summary: str
+    status: Literal["comfortable", "tight", "risky"]
+    impact_cards: list[SimulationImpactCard]
+    deficit_analysis: SimulationDeficitAnalysis
+    cash_impact: SimulationCashImpact
+    monthly_impact: SimulationMonthlyImpact
+    allocation_plan: SimulationAllocationPlan | None = None
+    recommended_next_steps: list[str]
+
+
 class SimulationScenarioRequest(BaseModel):
     persona_id: str
     name: str
     scenario_type: Literal[
+        "custom_outflow",
+        "custom_allocation",
         "new_monthly_expense",
         "extra_debt_payment",
         "cancel_subscriptions",
         "reduce_category_spend",
         "move_to_savings"
     ]
+    cadence: Literal["one_time", "monthly"] = "monthly"
+    effective_date: date | None = None
     amount: float | None = None
     category_key: str | None = None
     subscription_ids: list[str] = Field(default_factory=list)
@@ -315,6 +400,7 @@ class SimulationResultSchema(BaseModel):
     current_state: dict[str, float | str | None]
     simulated_state: dict[str, float | str | None]
     deltas: dict[str, float | str | None]
+    planner: SimulationPlannerResult | None = None
 
 
 class ChatSessionSchema(ORMModel):
@@ -358,6 +444,8 @@ class SimulationHistoryItem(BaseModel):
     scenario_id: str
     name: str
     scenario_type: Literal[
+        "custom_outflow",
+        "custom_allocation",
         "new_monthly_expense",
         "extra_debt_payment",
         "cancel_subscriptions",

@@ -63,19 +63,19 @@ export function buildDebtPriorityPresentation({
   const priorityOffer = offers[0];
 
   if (priorityOffer) {
-    return {
-      cardId: priorityOffer.cardId,
-      badge: priorityOffer.tone === "urgent" ? "Promo deadline near" : "Promo needs pacing",
-      badgeTone: priorityOffer.tone,
-      headline: `Protect ${priorityOffer.cardName} before deferred interest hits.`,
-      summary: `This promo balance has a real deadline, so it should outrank general strategy theory until the financing window is cleared.`,
-      amountLabel: "Pay at least each month",
-      amountValue: priorityOffer.requiredMonthlyPayment,
-      amountDetail: `That pace clears about ${priorityOffer.remainingAmount.toFixed(0)} before ${priorityOffer.expiresOn}.`,
-      detail: [
-        `${priorityOffer.label} still has about $${priorityOffer.remainingAmount.toFixed(0)} left on ${priorityOffer.cardName}.`,
-        `There are ${priorityOffer.daysRemaining} days left before the promo expires.`,
-        priorityOffer.estimatedBackcharge
+  return {
+    cardId: priorityOffer.cardId,
+    badge: priorityOffer.tone === "urgent" ? "Promo deadline near" : "Promo needs pacing",
+    badgeTone: priorityOffer.tone,
+    headline: `Protect ${priorityOffer.cardName} before deferred interest hits.`,
+    summary: `This promo balance has a real deadline, so it should outrank general strategy theory until the financing window is cleared.`,
+    amountLabel: "Total payment to keep on pace",
+    amountValue: priorityOffer.requiredMonthlyPayment,
+    amountDetail: `Keep minimums current on every card. This card should reach about $${priorityOffer.requiredMonthlyPayment.toFixed(0)} total this month before ${priorityOffer.expiresOn}.`,
+    detail: [
+      `${priorityOffer.label} still has about $${priorityOffer.remainingAmount.toFixed(0)} left on ${priorityOffer.cardName}.`,
+      `There are ${priorityOffer.daysRemaining} days left before the promo expires.`,
+      priorityOffer.estimatedBackcharge
           ? `Missing that deadline could add about $${priorityOffer.estimatedBackcharge.toFixed(0)} in deferred interest.`
           : "Missing that deadline could trigger deferred interest on the remaining balance."
       ]
@@ -84,6 +84,7 @@ export function buildDebtPriorityPresentation({
 
   const target = recommendedTarget(debt);
   const card = cards.find((item) => item.id === String(target?.account_id)) ?? cards[0];
+  const extraAmount = Math.max(0, Number(target?.extra_payment ?? target?.suggested_payment ?? card?.minimum_payment ?? 0));
 
   return {
     cardId: card?.id ?? null,
@@ -91,11 +92,11 @@ export function buildDebtPriorityPresentation({
     badgeTone: "important",
     headline: card ? `Start with ${card.display_name} before spreading extra payments.` : "Use one focused payment instead of splitting extra cash.",
     summary: debt.rationale,
-    amountLabel: "Target payment",
-    amountValue: Number(target?.suggested_payment ?? card?.minimum_payment ?? 0),
+    amountLabel: "Extra to direct next",
+    amountValue: extraAmount,
     amountDetail: card?.statement_close_date
-      ? `Getting ahead of the next statement close on ${card.statement_close_date} should do more than splitting extra cash around.`
-      : "A focused payment should create more progress than splitting extra cash across every card.",
+      ? `Minimums stay covered first. Direct this extra amount to ${card.sanitized_name} before the next statement close on ${card.statement_close_date}.`
+      : "Minimums stay covered first. Direct this extra amount to the highest-priority card next.",
     detail: [
       debt.rationale,
       card?.utilization_estimate && card.utilization_estimate >= 0.7

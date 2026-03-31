@@ -234,7 +234,7 @@ def simulate(payload: SimulationScenarioRequest, db: Session = Depends(get_db)):
     user = resolve_persona(payload.persona_id, db)
     from ..services.finance import run_simulation
 
-    return run_simulation(db, user.persona_key, payload.model_dump())
+    return run_simulation(db, user.persona_key, payload.model_dump(mode="json"))
 
 
 @router.get("/simulations", response_model=list[SimulationHistoryItem])

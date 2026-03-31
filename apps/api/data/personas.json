@@ -309,6 +309,67 @@
     "flags": ["healthy"]
   },
   {
+    "id": "promo-financing-deferred-interest",
+    "name": "Avery Collins",
+    "archetype": "Promo financing deadline pressure",
+    "summary": "Cash flow looks decent on the surface, but a deferred-interest balance needs deadline-aware payments.",
+    "monthly_income": 6500,
+    "checking_balance": 4600,
+    "savings_balance": 2800,
+    "rent": 1850,
+    "utilities": 240,
+    "insurance": 168,
+    "phone": 78,
+    "weekly_groceries": 150,
+    "weekly_dining": 105,
+    "weekly_transport": 65,
+    "weekly_entertainment": 70,
+    "weekly_other_discretionary": 82,
+    "savings_floor": 2200,
+    "paycheck_frequency_days": 14,
+    "paycheck_amount": 3250,
+    "credit_cards": [
+      {
+        "name": "CareCredit",
+        "last4": "1182",
+        "limit": 7000,
+        "balance": 2950,
+        "apr": 29.99,
+        "minimum_payment": 95,
+        "due_day": 17,
+        "statement_close_day": 12,
+        "deferred_interest_offers": [
+          {
+            "id": "promo-vision-2025",
+            "label": "Vision procedure financing",
+            "promo_type": "deferred_interest",
+            "started_on": "2025-09-05",
+            "expires_on": "2026-06-18",
+            "deferred_amount": 2400,
+            "remaining_deferred_amount": 1860,
+            "estimated_deferred_interest_if_missed": 342
+          }
+        ]
+      },
+      {
+        "name": "Citi Double Cash",
+        "last4": "7714",
+        "limit": 9000,
+        "balance": 3650,
+        "apr": 21.4,
+        "minimum_payment": 112,
+        "due_day": 24,
+        "statement_close_day": 19
+      }
+    ],
+    "subscriptions": [
+      { "merchant": "Netflix", "amount": 19.99, "day": 4 },
+      { "merchant": "Spotify", "amount": 10.99, "day": 8 },
+      { "merchant": "iCloud", "amount": 9.99, "day": 14 }
+    ],
+    "flags": ["promo-balance", "inefficient-payments"]
+  },
+  {
     "id": "paycheck-to-paycheck",
     "name": "Marcus Bell",
     "archetype": "Paycheck to paycheck",

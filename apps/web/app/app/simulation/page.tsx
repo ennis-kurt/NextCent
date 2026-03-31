@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import { Calculator, CircleDollarSign, ShieldCheck, Sparkles } from "lucide-react";
+import { ArrowRightLeft, CircleDollarSign, ShieldCheck } from "lucide-react";
 
 import { PageFrame } from "@/components/page-frame";
 import { SimulationPanel } from "@/components/simulation-panel";
@@ -11,15 +11,30 @@ import { formatCurrency, formatNumber } from "@/lib/format";
 export default async function SimulationPage({
   searchParams
 }: {
-  searchParams: Promise<{ persona?: string }>;
+  searchParams: Promise<{
+    persona?: string;
+    mode?: "affordability" | "allocation";
+    amount?: string;
+    cadence?: "one_time" | "monthly";
+    date?: string;
+    label?: string;
+  }>;
 }) {
-  const { persona } = await searchParams;
+  const { persona, mode, amount, cadence, date, label } = await searchParams;
   const personaId = persona ?? "good-cash-poor-payment-allocation";
   const [personas, dashboard, initialHistory] = await Promise.all([
     getPageFramePersonas(),
     getDashboard(personaId),
-    getSimulationHistory(personaId)
+    getSimulationHistory(personaId, 6)
   ]);
+  const initialAmount = Number(amount ?? 500);
+  const initialPlanner = {
+    mode: mode === "allocation" ? "allocation" : "affordability",
+    amount: Number.isFinite(initialAmount) && initialAmount > 0 ? initialAmount : 500,
+    cadence: cadence === "monthly" ? "monthly" : "one_time",
+    effectiveDate: date ?? new Date().toISOString().slice(0, 10),
+    label: label ?? ""
+  } as const;
 
   return (
     <PageFrame pathname="/app/simulation" personaId={personaId} personas={personas}>
@@ -28,13 +43,13 @@ export default async function SimulationPage({
           <div className="max-w-3xl">
             <div className="flex flex-wrap items-center gap-3">
               <p className="text-[11px] uppercase tracking-[0.22em] text-[var(--pa-text-soft)]">Decision lab</p>
-              <StatusPill tone="safe">What-if modeling</StatusPill>
+              <StatusPill tone="safe">Next-dollar planner</StatusPill>
             </div>
             <h1 className="mt-3 font-display text-[2rem] leading-tight text-[var(--pa-text)] md:text-[2.2rem]">
-              Try the next money move before you make it.
+              See whether an amount fits, then learn where it should go.
             </h1>
             <p className="mt-3 text-sm leading-7 text-[var(--pa-text-muted)]">
-              Build a quick scenario, see the likely change to surplus and comfort level, and reopen saved runs without re-entering the setup.
+              Start with a one-time or monthly amount, check whether it works without outside income, and then use the allocation planner to split that money across debt, reserve, and investing.
             </p>
           </div>
           <div className="rounded-[24px] border border-[var(--pa-border)] bg-white/84 px-5 py-4">
@@ -57,14 +72,14 @@ export default async function SimulationPage({
             value={`${formatNumber(dashboard.financial_health.overall_score)}/100`}
           />
           <InlineContext
-            icon={<Sparkles aria-hidden="true" className="h-4 w-4" />}
-            label="Saved runs"
-            value={initialHistory.length > 0 ? `${initialHistory.length} ready to reopen` : "No saved runs yet"}
+            icon={<ArrowRightLeft aria-hidden="true" className="h-4 w-4" />}
+            label="Planner focus"
+            value="Affordability + next-dollar allocation"
           />
         </div>
       </section>
 
-      <SimulationPanel personaId={personaId} initialHistory={initialHistory} />
+      <SimulationPanel initialHistory={initialHistory} initialPlanner={initialPlanner} personaId={personaId} />
     </PageFrame>
   );
 }

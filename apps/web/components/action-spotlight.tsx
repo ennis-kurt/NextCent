@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { ArrowUpRight, WalletCards } from "lucide-react";
 
 import { formatCurrency } from "@/lib/format";
@@ -17,7 +18,9 @@ export function ActionSpotlight({
   contextLabel,
   contextValue,
   detailSummary,
-  detail
+  detail,
+  plannerHref,
+  plannerLabel
 }: DashboardCoachPresentation) {
   return (
     <section className="relative overflow-hidden rounded-[28px] border border-[rgba(18,32,43,0.14)] bg-[linear-gradient(135deg,rgba(19,36,47,0.98),rgba(18,32,43,0.92)_58%,rgba(31,116,104,0.85))] px-5 py-5 text-white shadow-[0_28px_64px_rgba(8,15,22,0.22)] md:rounded-[32px] md:px-7 md:py-6">
@@ -66,6 +69,12 @@ export function ActionSpotlight({
             <p className="text-[11px] uppercase tracking-[0.16em] text-white/46">{contextLabel}</p>
             <p className="mt-2 text-sm text-white/74">{formatCurrency(contextValue)}</p>
           </div>
+          <Link
+            href={plannerHref}
+            className="mt-4 inline-flex items-center justify-center rounded-full border border-white/12 bg-white/10 px-4 py-2 text-xs font-semibold uppercase tracking-[0.18em] text-white transition-[background-color,transform] duration-150 hover:-translate-y-0.5 hover:bg-white/14 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70"
+          >
+            {plannerLabel}
+          </Link>
         </div>
       </div>
     </section>

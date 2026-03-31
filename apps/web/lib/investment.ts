@@ -78,7 +78,7 @@ function deriveInvestmentGuidanceFallback(
     const debtAmount = roundMoney(
       Math.max(
         0,
-        topDebtTarget?.suggested_payment ?? Math.min(monthlySurplus * 0.55, Math.max(feeLeakage * 4, 150))
+        topDebtTarget?.extra_payment ?? topDebtTarget?.suggested_payment ?? Math.min(monthlySurplus * 0.55, Math.max(feeLeakage * 4, 150))
       )
     );
 

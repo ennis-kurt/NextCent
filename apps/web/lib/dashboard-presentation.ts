@@ -15,6 +15,8 @@ export type DashboardCoachPresentation = {
   contextValue: number;
   detailSummary: string;
   detail: string[];
+  plannerHref: string;
+  plannerLabel: string;
 };
 
 export type DashboardRunwayPresentation = {
@@ -126,12 +128,37 @@ function investmentSummary(investment: InvestmentGuidance) {
   return `Use extra money for ${investment.priority_destination.toLowerCase()} before opening a new investing habit.`;
 }
 
+function simulationHref({
+  personaId,
+  mode,
+  amount,
+  cadence,
+  label
+}: {
+  personaId: string;
+  mode: "affordability" | "allocation";
+  amount: number;
+  cadence: "one_time" | "monthly";
+  label: string;
+}) {
+  const params = new URLSearchParams({
+    persona: personaId,
+    mode,
+    amount: String(Math.max(0, Math.round(amount))),
+    cadence,
+    label
+  });
+  return `/app/simulation?${params.toString()}`;
+}
+
 export function buildDashboardCoachPresentation({
+  personaId,
   dashboard,
   debt,
   credit,
   investment
 }: {
+  personaId: string;
   dashboard: DashboardResponseCompat;
   debt: DebtStrategyRun;
   credit: CreditSummaryResponse;
@@ -160,7 +187,15 @@ export function buildDashboardCoachPresentation({
         recommendation.rationale,
         recommendation.why_now,
         recommendation.impact_estimate
-      ]
+      ],
+      plannerHref: simulationHref({
+        personaId,
+        mode: "affordability",
+        amount: dashboard.safe_to_spend.safe_to_spend_this_week,
+        cadence: "one_time",
+        label: "Extra spending this week"
+      }),
+      plannerLabel: "Test this in Simulation"
     };
   }
 
@@ -180,7 +215,15 @@ export function buildDashboardCoachPresentation({
         recommendation.summary,
         recommendation.rationale,
         recommendation.impact_estimate
-      ]
+      ],
+      plannerHref: simulationHref({
+        personaId,
+        mode: "affordability",
+        amount: recommendation.suggested_action_amount ?? dashboard.subscriptions_total,
+        cadence: "monthly",
+        label: "Subscription cleanup"
+      }),
+      plannerLabel: "Test this in Simulation"
     };
   }
 
@@ -200,7 +243,15 @@ export function buildDashboardCoachPresentation({
         recommendation.summary,
         recommendation.rationale,
         recommendation.impact_estimate
-      ]
+      ],
+      plannerHref: simulationHref({
+        personaId,
+        mode: "allocation",
+        amount: recommendation.suggested_action_amount ?? investment.recommended_investment_amount,
+        cadence: investment.cadence === "monthly" ? "monthly" : "one_time",
+        label: "Investment contribution"
+      }),
+      plannerLabel: "Model this amount"
     };
   }
 
@@ -220,9 +271,22 @@ export function buildDashboardCoachPresentation({
         recommendation.summary,
         recommendation.rationale,
         recommendation.impact_estimate
-      ]
+      ],
+      plannerHref: simulationHref({
+        personaId,
+        mode: "affordability",
+        amount: recommendation.suggested_action_amount ?? dashboard.fee_and_interest_leakage,
+        cadence: "monthly",
+        label: "Monthly leakage"
+      }),
+      plannerLabel: "Test this in Simulation"
     };
   }
+
+  const debtExtra = Math.max(
+    0,
+    Number(recommendation?.suggested_action_amount ?? debtTarget?.extra_payment ?? debtTarget?.suggested_payment ?? dashboard.safe_to_spend.safe_to_spend_this_week)
+  );
 
   return {
     badge: label,
@@ -232,10 +296,10 @@ export function buildDashboardCoachPresentation({
       ? `${debtTargetCard.display_name} is the clearest place to start right now, and concentrating the payment should do more than spreading it around.`
       : "One focused debt payment should help more than splitting extra cash evenly.",
     amountLabel: "Move this amount",
-    amountValue: recommendation?.suggested_action_amount ?? Number(debtTarget?.suggested_payment ?? dashboard.safe_to_spend.safe_to_spend_this_week),
+    amountValue: debtExtra,
     amountDetail: debtTargetCard
-      ? `Start with ${debtTargetCard.sanitized_name} after minimums are covered.`
-      : "Focus it on the highest-priority debt target after minimums are covered.",
+      ? `This is the extra amount to direct after minimums stay covered. Start with ${debtTargetCard.sanitized_name}.`
+      : "This is the extra amount to direct after minimums are covered.",
     contextLabel: "Money left this week",
     contextValue: dashboard.safe_to_spend.safe_to_spend_this_week,
     detailSummary: "See why this card comes first.",
@@ -243,7 +307,15 @@ export function buildDashboardCoachPresentation({
       recommendation?.summary ?? "This payment order should improve debt progress faster than splitting extra cash.",
       recommendation?.rationale ?? debt.rationale,
       recommendation?.impact_estimate ?? preferredStrategy?.why_choose_it ?? "A focused payment should produce faster visible progress."
-    ]
+    ],
+    plannerHref: simulationHref({
+      personaId,
+      mode: "allocation",
+      amount: debtExtra,
+      cadence: "one_time",
+      label: debtTargetCard ? `Extra payment for ${debtTargetCard.sanitized_name}` : "Extra debt payment"
+    }),
+    plannerLabel: "Model this amount"
   };
 }
 
@@ -268,6 +340,7 @@ export function buildDashboardFocusCards({
   const preferredStrategy = debt.strategies.find((strategy) => strategy.strategy === debt.recommended_strategy);
   const debtTarget = preferredStrategy?.suggested_allocations[0];
   const debtTargetCard = credit.cards.find((card) => card.id === String(debtTarget?.account_id));
+  const debtExtra = Math.max(0, Number(debtTarget?.extra_payment ?? debtTarget?.suggested_payment ?? 0));
   const avoidableCosts = dashboard.subscriptions_total + dashboard.fee_and_interest_leakage;
 
   return [
@@ -293,10 +366,10 @@ export function buildDashboardFocusCards({
       title: debtTargetCard
         ? `${debtTargetCard.sanitized_name} should get the extra payment.`
         : "One debt target matters more than spreading payments around.",
-      metricLabel: "Pay this next",
-      metricValue: Number(debtTarget?.suggested_payment ?? 0),
+      metricLabel: "Extra after minimums",
+      metricValue: debtExtra,
       summary: debtTargetCard
-        ? `After minimums, focus the extra money on ${debtTargetCard.display_name}.`
+        ? `Keep minimums current, then direct the extra amount to ${debtTargetCard.display_name}.`
         : "Focus extra money on one target after minimums are covered.",
       href: `/app/debt-optimizer?persona=${personaId}`,
       cta: "Open Debt Optimizer",

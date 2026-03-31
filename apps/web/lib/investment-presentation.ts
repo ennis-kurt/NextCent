@@ -104,9 +104,9 @@ export function buildInvestmentCoachPresentation({
     summary: "The current interest drag is strong enough that debt payoff is still the cleaner next-dollar move.",
     amountLabel: "Use this for debt now",
     amountValue: guidance.priority_action_amount,
-    amountDetail:
-      debtTargetCard && topDebtTarget
-        ? `Send about ${formatCurrency(topDebtTarget.suggested_payment)} to ${debtTargetCard.display_name} before starting a new investment contribution.`
+      amountDetail:
+        debtTargetCard && topDebtTarget
+        ? `Keep minimums current, then send about ${formatCurrency(topDebtTarget.extra_payment ?? topDebtTarget.suggested_payment)} extra to ${debtTargetCard.display_name} before starting a new investment contribution.`
         : `Use about ${formatCurrency(guidance.priority_action_amount)} for debt reduction before starting a new investment contribution.`,
     destinationLabel: "Best place for extra money",
     destinationValue: debtTargetCard ? debtTargetCard.display_name : guidance.priority_destination,

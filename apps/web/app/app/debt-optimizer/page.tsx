@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { ArrowDownCircle, Clock3, ShieldAlert, WalletCards } from "lucide-react";
 
 import { BalanceHistoryChart } from "@/components/charts";
@@ -36,6 +37,13 @@ export default async function DebtOptimizerPage({
   const priorityCard = cards.find((card) => card.id === priority.cardId) ?? cards[0];
   const interestThisMonth = cards.reduce((sum, card) => sum + card.interest_charged_this_month, 0);
   const interestSixMonths = cards.reduce((sum, card) => sum + card.interest_charged_last_six_months, 0);
+  const prioritySimulationHref = `/app/simulation?${new URLSearchParams({
+    persona: personaId,
+    mode: "allocation",
+    amount: String(Math.max(0, Math.round(priority.amountValue))),
+    cadence: deferredOffers.length > 0 ? "monthly" : "one_time",
+    label: priorityCard ? `Debt plan for ${priorityCard.sanitized_name}` : "Debt payment plan"
+  }).toString()}`;
 
   return (
     <PageFrame pathname="/app/debt-optimizer" personaId={personaId} personas={personas}>
@@ -113,6 +121,12 @@ export default async function DebtOptimizerPage({
                   </div>
                 </div>
                 <p className="mt-4 text-sm leading-7 text-[var(--pa-text-muted)]">{priority.amountDetail}</p>
+                <Link
+                  href={prioritySimulationHref}
+                  className="mt-4 inline-flex items-center justify-center rounded-full border border-[rgba(31,116,104,0.18)] bg-[var(--pa-primary-soft)]/65 px-4 py-2 text-xs font-semibold uppercase tracking-[0.18em] text-[var(--pa-primary)] transition-[background-color,transform] duration-150 hover:-translate-y-0.5 hover:bg-[var(--pa-primary-soft)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--pa-primary)]"
+                >
+                  Model this amount
+                </Link>
               </div>
 
               <div className="mt-5 space-y-3">

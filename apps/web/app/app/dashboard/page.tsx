@@ -44,6 +44,7 @@ export default async function DashboardPage({
   });
 
   const coach = buildDashboardCoachPresentation({
+    personaId,
     dashboard,
     debt,
     credit,
