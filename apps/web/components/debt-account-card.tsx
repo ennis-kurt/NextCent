@@ -22,14 +22,14 @@ export function DebtAccountCard({
   return (
     <article
       className={cn(
-        "rounded-[24px] border bg-[linear-gradient(180deg,rgba(255,255,255,0.92),rgba(247,239,226,0.9))] p-5 shadow-[var(--pa-shadow-sm)]",
+        "min-w-0 overflow-hidden rounded-[24px] border bg-[linear-gradient(180deg,rgba(255,255,255,0.92),rgba(247,239,226,0.9))] p-5 shadow-[var(--pa-shadow-sm)]",
         isPriority ? "border-[rgba(31,116,104,0.28)] shadow-[0_22px_36px_rgba(31,116,104,0.08)]" : "border-[var(--pa-border)]"
       )}
     >
       <div className="flex flex-wrap items-start justify-between gap-3">
-        <div className="space-y-2">
+        <div className="min-w-0 space-y-2">
           <p className="text-[11px] uppercase tracking-[0.18em] text-[var(--pa-text-soft)]">{card.sanitized_name}</p>
-          <h3 className="font-display text-[1.3rem] leading-tight text-[var(--pa-text)]">{card.display_name}</h3>
+          <h3 className="break-words font-display text-[1.3rem] leading-tight text-[var(--pa-text)]">{card.display_name}</h3>
         </div>
         <div className="flex flex-wrap justify-end gap-2">
           {isPriority ? <StatusPill tone="safe">Priority now</StatusPill> : null}
@@ -44,7 +44,7 @@ export function DebtAccountCard({
       </div>
 
       <div className="mt-4 grid gap-4 lg:grid-cols-[minmax(0,1.2fr)_minmax(0,0.8fr)] lg:items-center">
-        <div className="rounded-[20px] border border-[var(--pa-border)] bg-white/72 p-4">
+        <div className="min-w-0 rounded-[20px] border border-[var(--pa-border)] bg-white/72 p-4">
           <div className="flex items-center justify-between gap-3">
             <p className="text-[11px] uppercase tracking-[0.16em] text-[var(--pa-text-soft)]">Balance trend, 12 months</p>
             <p className="text-sm font-medium text-[var(--pa-text)]">{formatCurrency(card.current_balance)}</p>
@@ -54,7 +54,7 @@ export function DebtAccountCard({
           </div>
         </div>
 
-        <div className="grid gap-3 sm:grid-cols-2">
+        <div className="min-w-0 grid gap-3 sm:grid-cols-2">
           <Metric label="Minimum due" value={formatCurrency(card.minimum_payment ?? 0)} />
           <Metric label="Due date" value={formatDate(card.due_date)} />
           <Metric label="Statement close" value={card.statement_close_date ? formatDate(card.statement_close_date) : "Unavailable"} />

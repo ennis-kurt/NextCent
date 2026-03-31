@@ -32,7 +32,7 @@ function formatMonthTick(value: string) {
 
 function ChartPlaceholder({
   message,
-  minWidth = "420px",
+  minWidth = "320px",
   heightClassName = "h-64 sm:h-72"
 }: {
   message: string;
@@ -58,7 +58,7 @@ export function SpendBreakdownChart({ data }: { data: CategorySpend[] }) {
 
   return (
     <div className="w-full overflow-x-auto pb-2" role="img" aria-label="Bar chart showing spending totals by category.">
-      <div className="h-64 min-w-[420px] w-full sm:h-72 sm:min-w-0">
+      <div className="h-64 min-w-[320px] w-full sm:h-72 sm:min-w-[420px]">
         <ResponsiveContainer width="100%" height="100%">
           <BarChart data={data} barSize={30}>
             <CartesianGrid stroke="rgba(15, 23, 32, 0.08)" strokeDasharray="3 6" vertical={false} />
@@ -104,7 +104,7 @@ export function CashFlowTrendChart({
 
   return (
     <div className="w-full overflow-x-auto pb-2" role="img" aria-label="Area chart comparing monthly income and spending trends.">
-      <div className="h-64 min-w-[420px] w-full sm:h-72 sm:min-w-0">
+      <div className="h-64 min-w-[320px] w-full sm:h-72 sm:min-w-[420px]">
         <ResponsiveContainer width="100%" height="100%">
           <AreaChart data={data}>
             <defs>
@@ -160,7 +160,7 @@ export function BalanceHistoryChart({
 
   return (
     <div className="w-full overflow-x-auto pb-2" role="img" aria-label={ariaLabel}>
-      <div className="h-64 min-w-[420px] w-full sm:h-72 sm:min-w-0">
+      <div className="h-64 min-w-[320px] w-full sm:h-72 sm:min-w-[420px]">
         <ResponsiveContainer width="100%" height="100%">
           <AreaChart data={data}>
             <defs>

@@ -95,7 +95,7 @@ export default async function DebtOptimizerPage({
           descriptionDetail="This priority blends the current strategy recommendation with hard timing constraints like promo deadlines, utilization pressure, and recent interest drag."
         >
           <div className="grid gap-5 xl:grid-cols-[1.05fr_0.95fr] xl:gap-6">
-            <div className="rounded-[24px] border border-[rgba(31,116,104,0.18)] bg-[linear-gradient(180deg,rgba(231,243,240,0.72),rgba(255,255,255,0.96))] p-5">
+            <div className="min-w-0 overflow-hidden rounded-[24px] border border-[rgba(31,116,104,0.18)] bg-[linear-gradient(180deg,rgba(231,243,240,0.72),rgba(255,255,255,0.96))] p-5">
               <div className="flex flex-wrap items-start justify-between gap-3">
                 <div className="max-w-2xl">
                   <p className="text-[11px] uppercase tracking-[0.18em] text-[var(--pa-text-soft)]">Main recommendation</p>
@@ -106,14 +106,14 @@ export default async function DebtOptimizerPage({
               </div>
 
               <div className="mt-5 rounded-[22px] border border-[var(--pa-border)] bg-white/85 p-4">
-                <div className="flex items-start justify-between gap-3">
-                  <div>
+                <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+                  <div className="min-w-0">
                     <p className="text-[11px] uppercase tracking-[0.16em] text-[var(--pa-text-soft)]">{priority.amountLabel}</p>
-                    <p className="mt-3 font-display text-[2.6rem] leading-none tabular-nums text-[var(--pa-text)]">
+                    <p className="mt-3 break-words font-display text-[2.25rem] leading-none tabular-nums text-[var(--pa-text)] sm:text-[2.6rem]">
                       {formatCurrency(priority.amountValue)}
                     </p>
                   </div>
-                  <div className="rounded-2xl border border-[rgba(31,116,104,0.16)] bg-[var(--pa-primary-soft)]/55 px-4 py-3">
+                  <div className="self-start rounded-2xl border border-[rgba(31,116,104,0.16)] bg-[var(--pa-primary-soft)]/55 px-4 py-3">
                     <p className="text-[11px] uppercase tracking-[0.16em] text-[var(--pa-text-soft)]">Statement close</p>
                     <p className="mt-2 text-sm font-semibold text-[var(--pa-text)]">
                       {priorityCard.statement_close_date ? formatDate(priorityCard.statement_close_date) : "Unavailable"}
@@ -161,11 +161,11 @@ export default async function DebtOptimizerPage({
               ) : null}
             </div>
 
-            <div className="rounded-[24px] border border-[var(--pa-border)] bg-[var(--pa-surface)] p-5">
+            <div className="min-w-0 overflow-hidden rounded-[24px] border border-[var(--pa-border)] bg-[var(--pa-surface)] p-5">
               <div className="flex flex-wrap items-start justify-between gap-3">
-                <div>
+                <div className="min-w-0">
                   <p className="text-[11px] uppercase tracking-[0.18em] text-[var(--pa-text-soft)]">Priority account</p>
-                  <h3 className="mt-2 font-display text-[1.35rem] text-[var(--pa-text)]">{priorityCard.display_name}</h3>
+                  <h3 className="mt-2 break-words font-display text-[1.35rem] text-[var(--pa-text)]">{priorityCard.display_name}</h3>
                   <p className="mt-2 text-sm text-[var(--pa-text-muted)]">{priorityCard.sanitized_name}</p>
                 </div>
                 <StatusPill tone={priorityCard.utilization_estimate && priorityCard.utilization_estimate >= 0.7 ? "important" : "safe"}>
