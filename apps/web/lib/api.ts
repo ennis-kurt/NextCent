@@ -60,6 +60,17 @@ const BRANCH_PREVIEW_API_BASE = deriveBranchPreviewApiBase();
 const CONFIGURED_API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://127.0.0.1:8000/api/v1";
 const API_BASE = BRANCH_PREVIEW_API_BASE ?? CONFIGURED_API_BASE;
 
+function normalizeCreditSummaryResponse(payload: CreditSummaryResponse): CreditSummaryResponse {
+  return {
+    ...payload,
+    cards: payload.cards.map((card) => ({
+      ...card,
+      balance_history: Array.isArray(card.balance_history) ? card.balance_history : [],
+      deferred_interest_offers: Array.isArray(card.deferred_interest_offers) ? card.deferred_interest_offers : []
+    }))
+  };
+}
+
 async function fetchJsonFromBase<T>(baseUrl: string, path: string, init?: RequestInit): Promise<T> {
   const response = await fetch(`${baseUrl}${path}`, {
     ...init,
@@ -137,7 +148,8 @@ export async function getMonthlyReviews(personaId: string) {
 }
 
 export async function getCreditSummary(personaId: string) {
-  return fetchJson<CreditSummaryResponse>(`/credit-summaries?persona_id=${personaId}`);
+  const payload = await fetchJson<CreditSummaryResponse>(`/credit-summaries?persona_id=${personaId}`);
+  return normalizeCreditSummaryResponse(payload);
 }
 
 export async function getSanitizationPolicy() {
